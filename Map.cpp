@@ -111,3 +111,25 @@ Map::Map(const Map& other) {
 	}
 
 }
+
+
+// operators for continents
+
+Continent::Continent(const Continent& other)
+	: continentID(other.continentID),
+	continentName(other.continentName) {
+}
+
+Continent& Continent::operator=(const Continent& other) {
+	if (this != &other) {
+		continentID = other.continentID;
+		continentName = other.continentName;
+	}
+	return *this;
+}
+
+std::ostream& operator<<(std::ostream& os, const Continent& c) {
+	os << "Continent{id=" << c.continentID
+		<< ", name=\"" << c.continentName << "\"}";
+	return os;
+}
