@@ -4,6 +4,7 @@
 #include <ostream>
 #include <iostream>
 
+
 bool continentFlag = false;
 
 bool MapLoader::load(const std::string& filepath, Map*& outMap, std::ostream& diag) {
@@ -76,4 +77,37 @@ int Map::addContinent(const std::string& continentName) {
 	return id;
 }
 
+// implementation of the destructor
+Map::~Map() {
+	for (Territory* t : territories) {
+		delete t;
+	}
+	territories.clear(); 
 
+	// Free every Continent we own
+	for (Continent* c : continents) {
+		delete c;           // release the heap object
+	}
+	continents.clear();      // drop the pointer entries
+}
+
+
+
+// simple copy constructor for now
+Map::Map(const Map& other) {
+	continents.reserve(other.continents.size()); // here we are reserving the exact space needed to create a deep copy
+
+	//oc is the local var that is holding the pointer to the current continent being looped through
+	for (const Continent* oc : other.continents) { 
+		continents.push_back(new Continent(*oc)); //copie the values for the given continent, oc is pointing to the obj and we taking obj directly because of *
+	}
+
+	territories.reserve(other.territories.size());
+
+	for (const Territory* ot : other.territories) {
+		Territory* nt = new Territory(*ot);  // copies id, name, coords, continentID
+		nt->neighbors.clear();               // don’t point to other's objects
+		territories.push_back(nt);
+	}
+
+}

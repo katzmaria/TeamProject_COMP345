@@ -17,13 +17,21 @@ struct Territory {
 struct Continent {
 	int continentID = -1;
 	std::string continentName = "";
+	Continent(const Continent& other);
+	Continent& operator=(const Continent& other); // explicit copy assign
+	friend std::ostream& operator<<(std::ostream& os, const Continent& c);
 };
 
 
 class Map {
 public:
-	std::vector<Territory> territories;
-	std::vector<Continent> continents;
+	std::vector<Territory*> territories;
+	std::vector<Continent*> continents;
+
+	Map() = default; // This is the default constructor, basically use the compilers default values which is empty
+	Map(const Map&); // This is the copy constructor, will run when you want to make a copy of a map
+	~Map() // this is the destructor
+
 
 public:
 	int addContinent(const std::string& continentName); // here the & operator is used because we want to use the same string and not a copy
