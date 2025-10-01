@@ -1,55 +1,68 @@
-#ifndef MAP_H
-#define MAP_H
-
+#pragma once
 #include <string>
 #include <vector>
-#include <ostream>
+#include <iosfwd>
 
+// ---------- Territory ----------
 struct Territory {
-	int id = -1;
-	int continentID = -1;
-	std::string name = "";
-	int x;
-	int y;
-	std::vector<std::string> neighborsNames;
+    int id = -1;
+    int continentID = -1;
+    std::string name;
+    int x = 0, y = 0;
+
+    std::vector<std::string> neighborsNames;
+    std::vector<Territory*> neighbors;
+
+    Territory(int id, const std::string& name, int x, int y, const std::vector<std::string>& neighbors);
+
+    void addNeighbor(Territory* t);
 };
 
+// ---------- Continent ----------
 struct Continent {
-	int continentID = -1;
-	std::string continentName = "";
-	Continent(const Continent& other);
-	Continent& operator=(const Continent& other); // explicit copy assign
-	friend std::ostream& operator<<(std::ostream& os, const Continent& c);
+    int continentID = -1;
+    std::string continentName;
+    int bonus = 0;
+
+    Continent(int id, const std::string& name, int bonus_);
+    Continent(const Continent& other);
+    Continent& operator=(const Continent& other);
+    ~Continent() = default;
+    friend std::ostream& operator<<(std::ostream& os, const Continent& c);
 };
 
-
+// ---------- Map ----------
 class Map {
 public:
-	std::vector<Territory*> territories;
-	std::vector<Continent*> continents;
+    Map();
+    Map(const Map& other);
+    ~Map();
 
-	Map() = default; // This is the default constructor, basically use the compilers default values which is empty
-	Map(const Map&); // This is the copy constructor, will run when you want to make a copy of a map
-	~Map() // this is the destructor
+    int addContinent(const std::string& name, int bonus);
+    int addContinent(const std::string& name) { return addContinent(name, 0); }
 
+    Territory* addTerritory(const std::string& name, int continentId, int x, int y,
+        const std::vector<std::string>& neighbors);
 
-public:
-	int addContinent(const std::string& continentName); // here the & operator is used because we want to use the same string and not a copy
+    bool validate(std::ostream& diag) const;
+    void linkNeighbors(Territory* a, Territory* b);
 
+    void resolveAllNeighbors();
+    friend std::ostream& operator<<(std::ostream& os, const Map& m);
+
+private:
+    std::vector<Continent*> continents;
+    std::vector<Territory*> territories;
+
+    bool graphConnectedAll() const;
+    bool continentConnected(int continentId) const;
 };
 
-
+// ---------- MapLoader ----------
 class MapLoader {
-	void addContinentFromLine(Map* m, const std::string& line);
 public:
-	bool load(const std::string& filepath, Map*& outMap, std::ostream& diag);
-	// we are adding a & to string because dont want to copy the string but just get the reference, this should be bit more efficient
-	//Map* a pointer to a Map object (created in the heap) because we will use it later 
-		// we add a & to refer to the caller's pointer variable itself (thus not a direct copy)
-	// again the & is used because we want to write directly to the object itself and not just a copy
+    bool load(const std::string& filepath, Map*& outMap, std::ostream& diag);
+private:
+    void addContinentFromLine(Map* m, const std::string& line);
+    void addTerritoryFromeLine(Map* m, const std::string& line);
 };
-
-
-
-#endif
-

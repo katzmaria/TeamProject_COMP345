@@ -1,16 +1,26 @@
 #include "Map.h"
-#include <sstream>
 #include <iostream>
-
+#include <sstream>
 
 void testLoadMaps() {
-	MapLoader loader; 
-	Map* map = nullptr;
-	std::ostringstream diag;
+    MapLoader loader;
+    Map* m = nullptr;
 
-	const char* path = "maps/001_I72_Ghtroc 720.map";
+    // point this at one of your .map files
+    const std::string path = "maps/002_I72_X-29.map";
 
-	bool ok = loader.load(path, map, diag);
-	std::cout << (ok ? "[OK] " : "[FAIL] ") << diag.str();
+    if (!loader.load(path, m, std::cout)) {
+        std::cout << "load failed for: " << path << "\n";
+        return;
+    }
 
+    std::ostringstream diag;
+    bool ok = m->validate(diag);  // validate() should call graphConnectedAll() inside
+
+    std::cout << "map fully connected ----> " << (ok ? "true" : "false") << "\n";
+    if (!ok) std::cout << diag.str();
+
+    std::cout << *m;
+
+    delete m; // avoid leak
 }
