@@ -14,5 +14,5 @@ class GameEngine {
         ~GameEngine();
         void setState(const std::string& newState);
         std::string getState() const;
-        //bool transition(const std::string& command);
+        bool transition(const std::string& command);
 };
