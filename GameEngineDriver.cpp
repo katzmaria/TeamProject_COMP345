@@ -33,7 +33,9 @@ void testGameStates(){
 }
 
 // this code is only for testing purposes. To be deleted
+/*
 int main() {
     testGameStates();
     return 0;
 }
+    *./
