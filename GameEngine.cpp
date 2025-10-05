@@ -31,3 +31,15 @@ std::ostream& operator<<(std::ostream& out, const GameEngine& engine){
 GameEngine::~GameEngine(){
     delete currentState;
 }
+
+// Setter method for currentState
+void GameEngine::setState(const std::string& newState){
+    delete currentState;
+    currentState = new std::string(newState);
+}
+
+// Getter method for currentState
+std::string GameEngine::getState() const {
+    return *currentState;
+}
+

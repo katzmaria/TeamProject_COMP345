@@ -12,4 +12,7 @@ class GameEngine {
         GameEngine& operator=(const GameEngine& engine);
         friend std::ostream& operator<<(std::ostream& out, const GameEngine& engine);
         ~GameEngine();
+        void setState(const std::string& newState);
+        std::string getState() const;
+        //bool transition(const std::string& command);
 };
