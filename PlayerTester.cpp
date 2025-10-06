@@ -4,7 +4,7 @@
 #include "Orders.h"
 #include "Map.h"
 
-int main() {
+void testPlayers() {
     std::cout << "=== PLAYER TESTER START ===" << std::endl;
 
     // Create a player
@@ -56,5 +56,4 @@ int main() {
     std::cout << "\n=== PLAYER TESTER END ===" << std::endl;
 
     delete p1;
-    return 0;
 }
