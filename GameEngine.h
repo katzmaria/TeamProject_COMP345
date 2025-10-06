@@ -5,7 +5,7 @@
 class GameEngine {
     private:
         std::string* currentState;
-        int playerCount;
+        int *playerCount;
 
     public: 
         GameEngine();

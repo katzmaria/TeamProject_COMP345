@@ -5,13 +5,13 @@
 // default constructor will initialize the GameEngine object to the start state
 GameEngine::GameEngine() {
     currentState = new std::string("start");
-    playerCount = 0;
+    playerCount = new int(0);
 }
 
 // copy constructor 
 GameEngine::GameEngine(const GameEngine& engine){
     currentState = new std::string(*engine.currentState);
-    playerCount = engine.getPlayerCount();
+    playerCount = new int(*engine.playerCount);
 }
 
 // Assignment operator
@@ -19,7 +19,7 @@ GameEngine& GameEngine::operator=(const GameEngine& engine){
     if (this != &engine){
         delete currentState;
         currentState = new std::string(*engine.currentState);
-        playerCount = engine.getPlayerCount();
+        playerCount = new int(*engine.playerCount);
     }
     return *this;
 }
@@ -27,13 +27,14 @@ GameEngine& GameEngine::operator=(const GameEngine& engine){
 // Stream insertion operator implementation
 std::ostream& operator<<(std::ostream& out, const GameEngine& engine){
     out << "Current Game State: " << *engine.currentState
-        << ", Player Count: " << engine.playerCount;
+        << ", Player Count: " << *engine.playerCount;
     return out;
 }
 
 // destructor *(will have to be updated when we add more attributes to the class)
 GameEngine::~GameEngine(){
     delete currentState;
+    delete playerCount;
 }
 
 // Setter method for currentState
@@ -49,13 +50,13 @@ std::string GameEngine::getState() const {
 
 // This method gets the current player count
 int GameEngine::getPlayerCount() const {
-    return playerCount;
+    return *playerCount;
 }
 
 // will add a single player to the game. Currently not maximum player limit
 bool GameEngine::addPlayer() {
-    playerCount++;
-    std::cout << "Player " << playerCount << " added!" << std::endl;
+    (*playerCount)++;
+    std::cout << "Player " << *playerCount << " added!" << std::endl;
     return true;
 }
 
