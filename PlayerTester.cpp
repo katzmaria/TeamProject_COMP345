@@ -1,55 +1,60 @@
 
-#include <vector>
-#include <string>
-#include <iosfwd>
+#include <iostream>
+#include "Player.h"
+#include "Orders.h"
+#include "Map.h"
 
-// Forward declarations (implemented elsewhere)
-class Territory;
-class Hand;
-class OrdersList;
-class Order;
+int main() {
+    std::cout << "=== PLAYER TESTER START ===" << std::endl;
 
-class Player {
-private:
-    std::string*                name_;
-    std::vector<Territory*>*    territories_; // vector of territories (not owned by Player)
-    Hand*                       hand_;        // owned by Player
-    OrdersList*                 orders_;      // owned by Player
+    // Create a player
+    Player* p1 = new Player("Justin");
 
-public:
-    // Constructors / Rule of Three
-    Player();                                     // default constructor
-    explicit Player(const std::string& name);     // parameterized constructor
-    Player(const Player& other);                  // copy constructor
-    Player& operator=(const Player& other);       // copy assignment
-    ~Player();                                    // destructor
+    // Create some dummy territories (normally they come from a Map)
+    Territory* t1 = new Territory(0, "Montreal", 0, 0, {});
+    Territory* t2 = new Territory(1, "Toronto", 0, 0, {});
+    Territory* t3 = new Territory(2, "Ottawa", 0, 0, {});
 
-    // Name
-    const std::string& name() const;
-    void setName(const std::string& n);
- 
-    // Hand
-    Hand* hand() const;
-    void setHand(Hand* h);                        // takes ownership
+    // Assign them to the player
+    p1->addTerritory(t1);
+    p1->addTerritory(t2);
+    p1->addTerritory(t3);
 
-    // Orders
-    OrdersList* orders() const;
-    void setOrders(OrdersList* ol);               // takes ownership
+    // Display basic player info
+    std::cout << "\n" << *p1 << std::endl;
 
-    // Territories owned
-    const std::vector<Territory*>* territories() const;
-    void addTerritory(Territory* t);
-    void removeTerritory(Territory* t);
+    // Show territories to defend and to attack
+    std::cout << "\nTo Defend:" << std::endl;
+    for (auto* terr : p1->toDefend())
+        std::cout << "  - " << terr->name << std::endl;
 
-    // Planning helpers (stub logic for now)
-    std::vector<Territory*> toDefend() const;
-    std::vector<Territory*> toAttack() const;
+    std::cout << "\nTo Attack:" << std::endl;
+    for (auto* terr : p1->toAttack())
+        std::cout << "  - " << terr->name << std::endl;
 
-    // Create and enqueue an order by kind ("deploy","advance","bomb","blockade","airlift","negotiate")
-    // (Parameters omitted here to match current Orders.cpp/simple factories;
-    //  you can overload later if you add typed parameters.)
-    Order* issueOrder(const std::string& kind);
+    // Issue different types of orders
+    std::cout << "\nIssuing Orders..." << std::endl;
+    p1->issueOrder("deploy");
+    p1->issueOrder("advance");
+    p1->issueOrder("bomb");
+    p1->issueOrder("blockade");
+    p1->issueOrder("airlift");
+    p1->issueOrder("negotiate");
 
-    // Printing
-    friend std::ostream& operator<<(std::ostream& os, const Player& p);
-};
+    // Display all orders
+    std::cout << "\nAll Orders:" << std::endl;
+    p1->orders()->display();
+
+    // Execute all orders
+    std::cout << "\nExecuting All Orders..." << std::endl;
+    p1->orders()->executeAllOrders();
+
+    // Show orders after execution
+    std::cout << "\nOrders After Execution:" << std::endl;
+    p1->orders()->display();
+
+    std::cout << "\n=== PLAYER TESTER END ===" << std::endl;
+
+    delete p1;
+    return 0;
+}
