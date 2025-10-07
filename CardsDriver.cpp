@@ -37,4 +37,3 @@ void cardsDriver() {
     srand(time(nullptr));
     testCards();
 }
-
