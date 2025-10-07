@@ -157,4 +157,8 @@ std::ostream& operator<<(std::ostream& out, const Deck& deck) {
     out << "Deck: ";
     for (auto c : *deck.cards) out << *c << " ";
     return out;
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> origin/main
