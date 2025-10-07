@@ -33,8 +33,8 @@ void testCards() {
     std::cout << "=== End Test ===" << std::endl;
 }
 
-int main() {
+void cardsDriver() {
     srand(time(nullptr));
-    testCards();   // Calling my test
-    return 0;
+    testCards();
 }
+
