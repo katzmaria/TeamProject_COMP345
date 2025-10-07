@@ -1,11 +1,19 @@
 {
+<<<<<<< HEAD
     "C_Cpp.errorSquiggles": "disabled",
     "files.associations": {
+=======
+    "files.associations": {
+        "typeinfo": "cpp",
+>>>>>>> origin/main
         "array": "cpp",
         "atomic": "cpp",
         "bit": "cpp",
         "cctype": "cpp",
+<<<<<<< HEAD
         "charconv": "cpp",
+=======
+>>>>>>> origin/main
         "clocale": "cpp",
         "cmath": "cpp",
         "compare": "cpp",
@@ -14,12 +22,19 @@
         "cstdint": "cpp",
         "cstdio": "cpp",
         "cstdlib": "cpp",
+<<<<<<< HEAD
         "ctime": "cpp",
+=======
+>>>>>>> origin/main
         "cwchar": "cpp",
         "cwctype": "cpp",
         "deque": "cpp",
         "string": "cpp",
         "unordered_map": "cpp",
+<<<<<<< HEAD
+=======
+        "unordered_set": "cpp",
+>>>>>>> origin/main
         "vector": "cpp",
         "exception": "cpp",
         "algorithm": "cpp",
@@ -35,7 +50,10 @@
         "tuple": "cpp",
         "type_traits": "cpp",
         "utility": "cpp",
+<<<<<<< HEAD
         "format": "cpp",
+=======
+>>>>>>> origin/main
         "fstream": "cpp",
         "initializer_list": "cpp",
         "iosfwd": "cpp",
@@ -45,6 +63,7 @@
         "new": "cpp",
         "numbers": "cpp",
         "ostream": "cpp",
+<<<<<<< HEAD
         "span": "cpp",
         "sstream": "cpp",
         "stdexcept": "cpp",
@@ -52,5 +71,26 @@
         "text_encoding": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp"
+=======
+        "sstream": "cpp",
+        "stdexcept": "cpp",
+        "streambuf": "cpp",
+        "cstring": "cpp",
+        "ctime": "cpp",
+        "ios": "cpp",
+        "list": "cpp",
+        "queue": "cpp",
+        "xfacet": "cpp",
+        "xhash": "cpp",
+        "xiosbase": "cpp",
+        "xlocale": "cpp",
+        "xlocinfo": "cpp",
+        "xlocnum": "cpp",
+        "xmemory": "cpp",
+        "xstddef": "cpp",
+        "xstring": "cpp",
+        "xtr1common": "cpp",
+        "xutility": "cpp"
+>>>>>>> origin/main
     }
 }
