@@ -20,51 +20,42 @@ static std::unordered_map<std::string, int> gContinentIdByName;
 // this is the map constructor
 Map::Map() {}
 
-bool MapLoader::load(const std::string& filepath, Map*& outMap, std::ostream& diag) {
+bool MapLoader::load(const std::string& path, Map*& outMap, std::ostream& diag) {
     outMap = nullptr;
 
-    std::ifstream in(filepath);
+    // reset per-load state so multiple loads in one run donâ€™t leak
+    gTerrByName.clear();
+    gContinentIdByName.clear();
+    continentFlag = false;
+    TerritoryFlag = false;
+
+    std::ifstream in(path);
     if (!in) {
-        diag << "[loader] could not open your file: " << filepath << "\n";
+        diag << "[loader] could not open: " << path << "\n";
         return false;
     }
 
-    int total = 0; // not really needed, just to track the total number of lines
-    std::string line; // this will be used to parse line by line later 
+    Map* m = new Map();
+    size_t total = 0;
 
-    Map* m = new Map(); // initializing an empty map object
+    // ... your existing parsing of [Continents] and [Territories] ...
+    // increment `total` as you read lines, fill m->continents / m->territories, etc.
 
-    while (std::getline(in, line)) {
-        if (line == "[Continents]") {
-            std::cout << "--------------------------- found the continent section! \n\n";
-            continentFlag = true;
-            TerritoryFlag = false;
-            continue;
-        }
-        else if (line == "[Territories]") {
-            std::cout << "--------------------------- found the territories section! \n\n";
-            TerritoryFlag = true;
-            continentFlag = false;
-            continue;
-        }
+    // after parsing:
+    m->resolveAllNeighbors();
 
-        if (continentFlag && !line.empty()) {
-            addContinentFromLine(m, line);
-        }
-        else if (TerritoryFlag && !line.empty()) {
-            addTerritoryFromeLine(m, line);
-        }
-        else {
-            continentFlag = false;
-            TerritoryFlag = false;
-        }
+    // validate BEFORE handing the map back
+    std::ostringstream vdiag;
+    bool ok = m->validate(vdiag);   // checks: global connectivity, continent connectivity, 1 continent per territory
+    diag << vdiag.str();
 
-        ++total;
+    if (!ok) {
+        diag << "[loader] validation failed. rejecting file.\n";
+        delete m;            // avoid leaking an invalid map
+        return false;        // outMap remains nullptr
     }
 
-    m->resolveAllNeighbors();
     outMap = m;
-
     diag << "[loader] opened OK. total lines = " << total << "\n";
     return true;
 }
@@ -177,7 +168,7 @@ Territory::Territory(int id_, const std::string& name_, int x_, int y_,
     const std::vector<std::string>& neighborsIn)
     : id(id_), name(name_), x(x_), y(y_) {
     // continentID set in Map::addTerritory
-    neighborsNames = neighborsIn; // we’ll resolve names to pointers later
+    neighborsNames = neighborsIn; // weï¿½ll resolve names to pointers later
 }
 
 // implementation of the destructor
@@ -199,7 +190,7 @@ Map::Map(const Map& other) {
     territories.reserve(other.territories.size());
     for (const Territory* ot : other.territories) {
         Territory* nt = new Territory(*ot);  // copies id, name, coords, continentID, neighborsNames
-        nt->neighbors.clear();               // don’t point to other's objects
+        nt->neighbors.clear();               // donï¿½t point to other's objects
         territories.push_back(nt);
     }
 }
