@@ -7,6 +7,7 @@
 #include <unordered_map>  // hash maps
 #include <queue>          // BFS
 #include <unordered_set>  // visited sets
+#include <sstream>
 
 
 // flags

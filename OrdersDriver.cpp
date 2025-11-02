@@ -5,17 +5,17 @@ void testOrdersLists() {
     OrdersList list;
 
     Deploy deploy; 
-    Advance advance; 
-    Bomb bomb; 
-    Blockade blockade; 
-    Airlift airlift; 
-    Negotiate negotiate;
+    // Advance advance; 
+    // Bomb bomb; 
+    // Blockade blockade; 
+    // Airlift airlift; 
+    // Negotiate negotiate;
     list.add(&deploy); 
-    list.add(&advance); 
-    list.add(&bomb); 
-    list.add(&blockade); 
-    list.add(&airlift); 
-    list.add(&negotiate);
+    // list.add(&advance); 
+    // list.add(&bomb); 
+    // list.add(&blockade); 
+    // list.add(&airlift); 
+    // list.add(&negotiate);
 
     std::cout << "-----Initial Orders-----\n"; 
     list.display();

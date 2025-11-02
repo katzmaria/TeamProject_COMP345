@@ -5,6 +5,11 @@
 #include <vector>
 #include <string>
 
+
+class Player;
+class Territory;
+
+
 class Order {
 private:
     std::string orderName;

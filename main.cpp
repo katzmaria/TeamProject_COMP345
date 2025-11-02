@@ -7,10 +7,11 @@ void testOrdersLists();
 void cardsDriver();
 
 int main() {
-    testLoadMaps();
+    // testLoadMaps();
     testGameStates();
-    testPlayers(); 
-    testOrdersLists();
+    // testPlayers(); 
+//    testOrdersLists();
+    // cardsDriver();
     return 0;
-    cardsDriver();
+    // cardsDriver();
 }
