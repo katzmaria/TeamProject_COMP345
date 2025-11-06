@@ -18,4 +18,10 @@ class GameEngine {
         bool transition(const std::string& command);
         int getPlayerCount() const;
         bool addPlayer();
+        void listMapsInCurrentDirectory() ;
+        const std::string& getMapSelect() const ;
+        void setMapSelect(const std::string& pathName);
+        bool loadingMap(const std::string& path);
+        bool validateLoadedMap();
+
 };
