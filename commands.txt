@@ -1,0 +1,6 @@
+loadmap map1.txt
+validatemap
+addplayer John
+addplayer Jane
+gamestart
+invalidChoice
