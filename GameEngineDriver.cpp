@@ -32,3 +32,15 @@ void testGameStates(){
     }
 }
 
+// function to test the startup phase of the GameEngine: Part 2 of the assignment
+void testStartupPhase() {
+    std::cout << "=== Testing Startup Phase ===" << std::endl;
+
+    GameEngine engine;
+    engine.startupPhase();
+
+    std::cout << "\nStartup phase complete. Current state: "
+              << engine.getState() << std::endl;
+}
+
+

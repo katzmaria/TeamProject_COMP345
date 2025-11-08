@@ -4,14 +4,11 @@ void testLoadMaps();
 void testGameStates();
 void testPlayers();
 void testOrdersLists();
-void cardsDriver();
 
 int main() {
-    // testLoadMaps();
+    testLoadMaps();
     testGameStates();
-    // testPlayers(); 
-//    testOrdersLists();
-    // cardsDriver();
+    testPlayers(); 
+    testOrdersLists();
     return 0;
-    // cardsDriver();
 }

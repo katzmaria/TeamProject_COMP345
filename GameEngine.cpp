@@ -302,3 +302,95 @@ bool GameEngine::transition(const std::string& command) {
 
     return false; // invalid transition
 }
+
+// Startup phase implementation: Part 2 of the assignment
+void GameEngine::startupPhase() {
+    std::cout << "=== Game Startup Phase ===" << std::endl;
+
+    CommandProcessor* cmdProcessor = new CommandProcessor();
+
+    bool mapLoaded = false;
+    bool mapValidated = false;
+    bool playersAdded = false;
+
+    while (true) {
+        std::string command = cmdProcessor->getCommand();
+
+        if (command.rfind("loadmap", 0) == 0) {
+            if (transition("loadmap")) mapLoaded = true;
+        }
+        else if (command == "validatemap") {
+            if (!mapLoaded) {
+                std::cout << "Please load a map first.\n";
+                continue;
+            }
+            if (transition("validatemap")) mapValidated = true;
+        }
+        else if (command.rfind("addplayer", 0) == 0) {
+            if (!mapValidated) {
+                std::cout << "Please validate the map first.\n";
+                continue;
+            }
+            if (getPlayerCount() >= 6) {
+                std::cout << "Maximum 6 players allowed.\n";
+                continue;
+            }
+            transition("addplayer");
+            playersAdded = getPlayerCount() >= 2;
+        }
+        else if (command == "gamestart") {
+            if (!playersAdded || getPlayerCount() < 2) {
+                std::cout << "At least 2 players required.\n";
+                continue;
+            }
+
+            std::cout << "Starting game setup..." << std::endl;
+
+            // a) fair territory distribution
+            if (m_map) {
+                std::vector<Territory*> allTerritories = m_map->getTerritories();
+                std::shuffle(allTerritories.begin(), allTerritories.end(),
+                             std::default_random_engine(static_cast<unsigned>(time(nullptr))));
+
+                int i = 0;
+                for (auto* t : allTerritories) {
+                    t->setOwner(players[i % getPlayerCount()]);
+                    i++;
+                }
+                std::cout << "Territories distributed." << std::endl;
+            }
+
+            // b) randomize play order
+            std::vector<Player*> temp = players;
+            std::shuffle(temp.begin(), temp.end(),
+                         std::default_random_engine(static_cast<unsigned>(time(nullptr))));
+            players = temp;
+            std::cout << "Random order of play determined." << std::endl;
+
+            // c) give 50 initial army units
+            for (auto* p : players) {
+                p->setReinforcementPool(50);
+            }
+
+            // d) draw 2 cards each
+            for (auto* p : players) {
+                p->addCard(deck->draw());
+                p->addCard(deck->draw());
+            }
+
+            // e) switch to play phase
+            setState("play");
+            std::cout << "Game state switched to PLAY phase.\n";
+            break;
+        }
+        else if (command == "quit") {
+            std::cout << "Startup phase terminated." << std::endl;
+            break;
+        }
+        else {
+            std::cout << "Unknown command.\n";
+        }
+    }
+
+    delete cmdProcessor;
+}
