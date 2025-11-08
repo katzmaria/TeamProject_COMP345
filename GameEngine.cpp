@@ -151,6 +151,8 @@ void GameEngine::startupPhase() {
             }
             if (transition("validatemap")) mapValidated = true;
         }
+    
+        // Adding players
         else if (command.rfind("addplayer", 0) == 0) {
             if (!mapValidated) {
                 std::cout << "Please validate the map first.\n";
@@ -160,9 +162,29 @@ void GameEngine::startupPhase() {
                 std::cout << "Maximum 6 players allowed.\n";
                 continue;
             }
+
+            // Parse "addplayer <playername>"
+            std::istringstream iss(command);
+            std::string cmd, playerName;
+            iss >> cmd >> playerName;
+
+            if (playerName.empty()) {
+                std::cout << "Usage: addplayer <playername>\n";
+                continue;
+            }
+
+            // Create and store the player
+            Player* newPlayer = new Player(playerName);
+            players.push_back(newPlayer);
+
+            (*playerCount)++;
             transition("addplayer");
-            playersAdded = getPlayerCount() >= 2;
+
+            std::cout << "Player added: " << playerName << std::endl;
+            playersAdded = (players.size() >= 2);
         }
+
+      
         else if (command == "gamestart") {
             if (!playersAdded || getPlayerCount() < 2) {
                 std::cout << "At least 2 players required.\n";
