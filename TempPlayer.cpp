@@ -10,6 +10,7 @@ Player::Player()
   territories_(new std::vector<Territory*>()),
   hand_(nullptr),
   orders_(nullptr) {}
+  reinforcementPool_(new int(0)) {}
 
 // parameterized constructor 
 Player::Player(const std::string& name)
@@ -17,6 +18,7 @@ Player::Player(const std::string& name)
   territories_(new std::vector<Territory*>()),
   hand_(nullptr),
   orders_(nullptr) {}
+  reinforcementPool_(new int(0)) {}
 
 // copy constructor (deep copy for Hand/OrdersList; shallow for Territory* list)
 Player::Player(const Player& other)
@@ -24,6 +26,7 @@ Player::Player(const Player& other)
   territories_(new std::vector<Territory*>(*other.territories_)),
   hand_(other.hand_ ? new Hand(*other.hand_) : nullptr),
   orders_(other.orders_ ? new OrdersList(*other.orders_) : nullptr)
+  reinforcementPool_(new int(*other.reinforcementPool_)) 
 {}
 
 // copy assignment
@@ -39,7 +42,7 @@ Player& Player::operator=(const Player& other) {
     delete orders_;
     hand_   = other.hand_   ? new Hand(*other.hand_)         : nullptr;
     orders_ = other.orders_ ? new OrdersList(*other.orders_) : nullptr;
-
+    *reinforcementPool_ = *other.reinforcementPool_;
     return *this;
 }
 
@@ -49,6 +52,7 @@ Player::~Player() {
     delete territories_;
     delete hand_;
     delete orders_;
+    delete reinforcementPool_;
 }
 
 // ----- getters/setters -----
@@ -78,6 +82,19 @@ void Player::setOrders(OrdersList* ol) {
     if (ol == orders_) return;
     delete orders_;
     orders_ = ol; // take ownership
+}
+
+int Player::getReinforcementPool() const {
+    return *reinforcementPool_;
+}
+
+void Player::setReinforcementPool(int value) {
+    *reinforcementPool_ = value;
+}
+
+void Player::addReinforcements(int delta) {
+    *reinforcementPool_ += delta;
+    if (*reinforcementPool_ < 0) *reinforcementPool_ = 0;  // just incase
 }
 
 // ----- territory management -----

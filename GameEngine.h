@@ -9,6 +9,8 @@ class GameEngine {
         int *playerCount;
         std::string mapSelect;
         Map* m_map = nullptr;
+        std::vector<Player*> players;  // players in the game
+        Deck* deck = nullptr;// deck in startup
 
     public: 
         GameEngine();
