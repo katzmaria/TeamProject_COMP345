@@ -183,8 +183,8 @@ Order* Player::issueOrder(const std::string& kind) {
         Order* created = new Deploy(this, target, amount);
         orders_->add(created);
 
-        // spend from reinforcement pool
-        setReinforcementPool(pool - amount);
+        // DON'T spend from reinforcement pool here - it happens in execute()
+        // setReinforcementPool(pool - amount);  // ← REMOVE THIS LINE
 
         return created;
     }

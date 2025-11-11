@@ -94,14 +94,16 @@ bool Deploy::validate() {
 void Deploy::execute() {
     if (!validate()) {
         setAction("Deploy order invalid.");
+        setExecuted(false);
         return;
     }
 
-    // In Part 4 add armies to target_ here.
-    setAction("Deploy " + std::to_string(armies_) +
-          " armies to " + target_->name);
-
-    executed = true;
+    // Spend reinforcements
+    owner_->setReinforcementPool(owner_->getReinforcementPool() - armies_);
+    
+    // Add armies to territory (implement in Part 4)
+    setAction("Deployed " + std::to_string(armies_) + " armies to " + target_->name);
+    setExecuted(true);
 }
 
 // BOMB CLASS
