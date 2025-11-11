@@ -10,82 +10,127 @@ class Player;
 class Territory;
 
 
+// Order Base Class
 class Order {
-private:
+protected:
     std::string orderName;
+    bool executed;
     std::string action;
-    
 
 public:
-    bool executed;
-    Order( const std::string& n);
+    Order(const std::string& n);
+    virtual ~Order() = default;
 
-    // Getters Functions
     std::string getOrderName();
+    std::string getAction();
     bool isExecuted();
 
-    // Setters Functions
     void setOrderName(std::string& n);
-    void setAction(const std::string& e);  
+    void setAction(const std::string& e);
     void setExecuted(bool e);
-    std::string getAction(); 
+
     virtual bool validate();
     virtual void execute();
-    friend std::ostream& operator<<(std::ostream& out,  const Order& order);
+
+    friend std::ostream& operator<<(std::ostream& out, const Order& order);
 };
 
-class Deploy : public Order { 
-    public: 
-      Deploy();
-    Deploy(Player* owner, Territory* target, int armies);
-
-    bool validate() override;
-    void execute() override; 
-
-    private:
+// Deploy Order
+class Deploy : public Order {
+private:
     Player* owner_;
     Territory* target_;
     int armies_;
 
-};
-class Advance : public Order { 
-    public: 
-    Advance(); 
-    bool validate(); 
-};
-class Bomb : public Order { 
-    public: 
-    Bomb(); 
-    bool validate(); 
-};
-class Blockade : public Order { 
-    public: 
-    Blockade(); 
-    bool validate(); 
-};
-class Airlift : public Order { 
-    public: 
-    Airlift(); 
-    bool validate(); 
-};
-class Negotiate : public Order { 
-    public: 
-    Negotiate(); 
-    bool validate(); 
+public:
+    Deploy();
+    Deploy(Player* owner, Territory* target, int armies);
+    bool validate() override;
+    void execute() override;
 };
 
+// Advance Order
+class Advance : public Order {
+private:
+    Player* owner_;
+    Territory* source_;
+    Territory* target_;
+    int armies_;
+
+public:
+    Advance();
+    Advance(Player* owner, Territory* source, Territory* target, int armies);
+    bool validate() override;
+    void execute() override;
+};
+
+// Bomb Order
+class Bomb : public Order {
+private:
+    Player* owner_;
+    Territory* target_;
+
+public:
+    Bomb();
+    Bomb(Player* owner, Territory* target);
+    bool validate() override;
+    void execute() override;
+};
+
+// Blockade Order
+class Blockade : public Order {
+private:
+    Player* owner_;
+    Territory* target_;
+
+public:
+    Blockade();
+    Blockade(Player* owner, Territory* target);
+    bool validate() override;
+    void execute() override;
+};
+
+// Airlift Order
+class Airlift : public Order {
+private:
+    Player* owner_;
+    Territory* source_;
+    Territory* target_;
+    int armies_;
+
+public:
+    Airlift();
+    Airlift(Player* owner, Territory* source, Territory* target, int armies);
+    bool validate() override;
+    void execute() override;
+};
+
+// Negotiate Order
+class Negotiate : public Order {
+private:
+    Player* owner_;
+    Player* targetPlayer_;
+
+public:
+    Negotiate();
+    Negotiate(Player* owner, Player* targetPlayer);
+    bool validate() override;
+    void execute() override;
+};
+
+// OrdersList Class
 class OrdersList {
+private:
     std::vector<Order*> orders;
 
 public:
     void add(Order* o);
     void remove(int i);
-    void move(int from, int to);
+    void move(int currentPosition, int newPosition);
     void display();
     void executeAllOrders();
     int size() const;
-    Order* get(int index) const;
-
+    Order* get(int i) const;
 };
 
 #endif

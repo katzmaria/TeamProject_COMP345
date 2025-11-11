@@ -1,5 +1,7 @@
 #include "Orders.h"
 #include "Map.h"
+#include "Player.h"  // Add this line
+#include "Cards.h"   // Add this line
 // Order Class
 Order::Order(const std::string& n) {
     orderName = n;
@@ -66,43 +68,235 @@ Deploy::Deploy(Player* owner, Territory* target, int armies)
     : Order("Deploy"), owner_(owner), target_(target), armies_(armies) {}
 
 bool Deploy::validate() {
-    return owner_ != nullptr && target_ != nullptr && armies_ > 0;
+    if (!owner_) return false;  // Changed from player
+    if (!target_) return false;  // Changed from targetTerritory
+    
+    // Check player owns the territory
+    const auto* terrs = owner_->territories();  // Changed from player
+    if (!terrs) return false;
+    
+    bool ownsTerritory = false;
+    for (Territory* t : *terrs) {
+        if (t == target_) {  // Changed from targetTerritory
+            ownsTerritory = true;
+            break;
+        }
+    }
+    
+    if (!ownsTerritory) return false;
+    
+    // Check player has enough reinforcements
+    if (owner_->getReinforcementPool() < armies_) return false;  // Changed from player and armies
+    
+    return true;
 }
 
-Advance::Advance() : Order("Advance") {
+void Deploy::execute() {
+    if (!validate()) {
+        setAction("Deploy order invalid.");
+        return;
+    }
 
-}
-bool Advance::validate() { 
-    return true; 
+    // In Part 4 add armies to target_ here.
+    setAction("Deploy " + std::to_string(armies_) +
+          " armies to " + target_->name);
+
+    executed = true;
 }
 
-Bomb::Bomb() : Order("Bomb") {
+// BOMB CLASS
+Bomb::Bomb() : Order("Bomb"), owner_(nullptr), target_(nullptr) {}
 
-}
+Bomb::Bomb(Player* owner, Territory* target) 
+    : Order("Bomb"), owner_(owner), target_(target) {}
+
 bool Bomb::validate() { 
+    if (!owner_ || !target_) return false;
+    
+    // Check target is NOT owned by player
+    const auto* terrs = owner_->territories();
+    if (terrs) {
+        for (Territory* t : *terrs) {
+            if (t == target_) {
+                setAction("Invalid: Cannot bomb own territory");
+                return false;
+            }
+        }
+    }
+    
+    // Check player has bomb card (implement when Hand::hasCard exists)
+    
     return true; 
 }
 
-Blockade::Blockade() : Order("Blockade") {
+void Bomb::execute() {
+    if (!validate()) {
+        setAction("Bomb order invalid.");
+        setExecuted(false);
+        return;
+    }
 
-}
-bool Blockade::validate() { 
-    return true; 
-}
-
-Airlift::Airlift() : Order("Airlift") {
-
-}
-bool Airlift::validate() { 
-    return true; 
+    setAction("Bombed " + target_->name);
+    setExecuted(true);
 }
 
-Negotiate::Negotiate() : Order("Negotiate") {
+// ADVANCE CLASS
+Advance::Advance() : Order("Advance"), owner_(nullptr), source_(nullptr), target_(nullptr), armies_(0) {}
 
+Advance::Advance(Player* owner, Territory* source, Territory* target, int armies)
+    : Order("Advance"), owner_(owner), source_(source), target_(target), armies_(armies) {}
 
+bool Advance::validate() {
+    if (!owner_ || !source_ || !target_) return false;
+    
+    // Check player owns source territory
+    const auto* terrs = owner_->territories();
+    if (!terrs) return false;
+    
+    bool ownsSource = false;
+    for (Territory* t : *terrs) {
+        if (t == source_) {
+            ownsSource = true;
+            break;
+        }
+    }
+    
+    if (!ownsSource) {
+        setAction("Invalid: Player does not own source territory");
+        return false;
+    }
+    
+    // Check source has enough armies (implement in Part 4)
+    
+    return true;
 }
-bool Negotiate::validate() { 
-    return true; 
+
+void Advance::execute() {
+    if (!validate()) {
+        setAction("Advance order invalid.");
+        setExecuted(false);
+        return;
+    }
+
+    setAction("Advanced " + std::to_string(armies_) + " armies from " + 
+              source_->name + " to " + target_->name);
+    setExecuted(true);
+}
+
+// BLOCKADE CLASS
+Blockade::Blockade() : Order("Blockade"), owner_(nullptr), target_(nullptr) {}
+
+Blockade::Blockade(Player* owner, Territory* target)
+    : Order("Blockade"), owner_(owner), target_(target) {}
+
+bool Blockade::validate() {
+    if (!owner_ || !target_) return false;
+    
+    // Check player owns the territory
+    const auto* terrs = owner_->territories();
+    if (!terrs) return false;
+    
+    bool ownsTerritory = false;
+    for (Territory* t : *terrs) {
+        if (t == target_) {
+            ownsTerritory = true;
+            break;
+        }
+    }
+    
+    if (!ownsTerritory) {
+        setAction("Invalid: Player does not own target territory");
+        return false;
+    }
+    
+    // Check player has blockade card (implement when Hand::hasCard exists)
+    
+    return true;
+}
+
+void Blockade::execute() {
+    if (!validate()) {
+        setAction("Blockade order invalid.");
+        setExecuted(false);
+        return;
+    }
+
+    setAction("Blockaded " + target_->name);
+    setExecuted(true);
+}
+
+// AIRLIFT CLASS
+Airlift::Airlift() : Order("Airlift"), owner_(nullptr), source_(nullptr), target_(nullptr), armies_(0) {}
+
+Airlift::Airlift(Player* owner, Territory* source, Territory* target, int armies)
+    : Order("Airlift"), owner_(owner), source_(source), target_(target), armies_(armies) {}
+
+bool Airlift::validate() {
+    if (!owner_ || !source_ || !target_) return false;
+    
+    // Check player owns both territories
+    const auto* terrs = owner_->territories();
+    if (!terrs) return false;
+    
+    bool ownsSource = false;
+    bool ownsTarget = false;
+    
+    for (Territory* t : *terrs) {
+        if (t == source_) ownsSource = true;
+        if (t == target_) ownsTarget = true;
+    }
+    
+    if (!ownsSource || !ownsTarget) {
+        setAction("Invalid: Player must own both territories");
+        return false;
+    }
+    
+    // Check player has airlift card (implement when Hand::hasCard exists)
+    
+    return true;
+}
+
+void Airlift::execute() {
+    if (!validate()) {
+        setAction("Airlift order invalid.");
+        setExecuted(false);
+        return;
+    }
+
+    setAction("Airlifted " + std::to_string(armies_) + " armies from " +
+              source_->name + " to " + target_->name);
+    setExecuted(true);
+}
+
+// NEGOTIATE CLASS
+Negotiate::Negotiate() : Order("Negotiate"), owner_(nullptr), targetPlayer_(nullptr) {}
+
+Negotiate::Negotiate(Player* owner, Player* targetPlayer)
+    : Order("Negotiate"), owner_(owner), targetPlayer_(targetPlayer) {}
+
+bool Negotiate::validate() {
+    if (!owner_ || !targetPlayer_) return false;
+    
+    // Can't negotiate with yourself
+    if (owner_ == targetPlayer_) {
+        setAction("Invalid: Cannot negotiate with yourself");
+        return false;
+    }
+    
+    // Check player has negotiate card (implement when Hand::hasCard exists)
+    
+    return true;
+}
+
+void Negotiate::execute() {
+    if (!validate()) {
+        setAction("Negotiate order invalid.");
+        setExecuted(false);
+        return;
+    }
+
+    setAction("Negotiated with " + targetPlayer_->name());
+    setExecuted(true);
 }
 
 /* OrdersList  */
@@ -141,19 +335,6 @@ void OrdersList::executeAllOrders() {
     for (int i = 0; i < orders.size(); i++) {
         orders[i]->execute();
     }
-}
-
-void Deploy::execute() {
-    if (!validate()) {
-        setAction("Deploy order invalid.");
-        return;
-    }
-
-    // In Part 4 add armies to target_ here.
-    setAction("Deploy " + std::to_string(armies_) +
-          " armies to " + target_->name);
-
-    executed = true;
 }
 
 int OrdersList::size() const {

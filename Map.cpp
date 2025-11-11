@@ -24,7 +24,7 @@ Map::Map() {}
 bool MapLoader::load(const std::string& path, Map*& outMap, std::ostream& diag) {
     outMap = nullptr;
 
-    // reset per-load state so multiple loads in one run don’t leak
+    // reset per-load state so multiple loads in one run don't leak
     gTerrByName.clear();
     gContinentIdByName.clear();
     continentFlag = false;
@@ -39,21 +39,46 @@ bool MapLoader::load(const std::string& path, Map*& outMap, std::ostream& diag) 
     Map* m = new Map();
     size_t total = 0;
 
-    // ... your existing parsing of [Continents] and [Territories] ...
-    // increment `total` as you read lines, fill m->continents / m->territories, etc.
+    // READ THE FILE LINE BY LINE
+    std::string line;
+    while (std::getline(in, line)) {
+        total++;
+        
+        // Skip empty lines
+        if (line.empty()) continue;
+        
+        // Check for section headers
+        if (line.find("[Continents]") != std::string::npos) {
+            continentFlag = true;
+            TerritoryFlag = false;
+            continue;
+        }
+        if (line.find("[Territories]") != std::string::npos) {
+            continentFlag = false;
+            TerritoryFlag = true;
+            continue;
+        }
+        
+        // Parse based on current section
+        if (continentFlag) {
+            addContinentFromLine(m, line);
+        } else if (TerritoryFlag) {
+            addTerritoryFromeLine(m, line);
+        }
+    }
 
     // after parsing:
     m->resolveAllNeighbors();
 
     // validate BEFORE handing the map back
     std::ostringstream vdiag;
-    bool ok = m->validate(vdiag);   // checks: global connectivity, continent connectivity, 1 continent per territory
+    bool ok = m->validate(vdiag);
     diag << vdiag.str();
 
     if (!ok) {
         diag << "[loader] validation failed. rejecting file.\n";
-        delete m;            // avoid leaking an invalid map
-        return false;        // outMap remains nullptr
+        delete m;
+        return false;
     }
 
     outMap = m;

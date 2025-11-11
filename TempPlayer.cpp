@@ -103,6 +103,8 @@ void Player::addTerritory(Territory* t) {
     auto& vec = *territories_;
     if (std::find(vec.begin(), vec.end(), t) == vec.end()) {
         vec.push_back(t);
+        std::cout << "DEBUG: Added territory " << t->name << " to " << *name_ 
+                  << ". Total territories: " << vec.size() << "\n";
     }
 }
 

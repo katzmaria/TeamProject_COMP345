@@ -297,16 +297,24 @@ void GameEngine::startupPhase() {
             // a) fair territory distribution
             if (m_map) {
                 std::vector<Territory*> allTerritories = m_map->getTerritories();
+                
+                // std::cout << "DEBUG: Map has " << allTerritories.size() << " territories to distribute.\n";
+                
                 std::shuffle(allTerritories.begin(), allTerritories.end(),
                              std::default_random_engine(
                                  static_cast<unsigned>(std::time(nullptr))));
 
                 int i = 0;
                 for (auto* t : allTerritories) {
-                    t->setOwner(players[i % players.size()]);
+                    Player* currentPlayer = players[i % players.size()];
+                    // std::cout << "DEBUG: Assigning territory " << t->name << " to " << currentPlayer->name() << "\n";
+                    t->setOwner(currentPlayer);
+                    currentPlayer->addTerritory(t);
                     ++i;
                 }
                 std::cout << "Territories distributed." << std::endl;
+            } else {
+                // std::cout << "DEBUG: m_map is NULL!\n";
             }
 
             // b) randomize play order
@@ -364,9 +372,19 @@ void GameEngine::reinforcementPhase() {
         if (!p) continue;
 
         const std::vector<Territory*>* ownedPtr = p->territories();
-        const auto& owned = ownedPtr ? *ownedPtr : std::vector<Territory*>();
+        if (!ownedPtr) {
+            std::cout << p->name()
+                      << " has no territories vector and receives 0 reinforcement armies.\n";
+            continue;
+        }
+        const auto& owned = *ownedPtr;
 
         int numOwned = static_cast<int>(owned.size());
+        
+        // Debug output
+        // std::cout << "DEBUG: " << p->name() << " territories() returned vector with " 
+        //           << numOwned << " territories.\n";
+        
         if (numOwned == 0) {
             std::cout << p->name()
                       << " has no territories and receives 0 reinforcement armies.\n";
