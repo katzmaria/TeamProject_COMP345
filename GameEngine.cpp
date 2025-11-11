@@ -1,193 +1,120 @@
 #include "GameEngine.h"
+#include "CommandProcessing.h"
+#include "Player.h"
+#include "Cards.h"
+#include "Orders.h"
+#include "Map.h"
+
 #include <string>
 #include <iostream>
 #include <vector>
-#include "Map.h"
 #include <sstream>
 #include <algorithm>
+#include <ctime>
+#include <random>
 
-// default constructor will initialize the GameEngine object to the start state
+// ================== basic GameEngine methods ==================
+
 GameEngine::GameEngine() {
     currentState = new std::string("start");
-    playerCount = new int(0);
+    playerCount  = new int(0);
+    deck = new Deck();
 }
 
-// copy constructor 
-GameEngine::GameEngine(const GameEngine& engine){
+GameEngine::GameEngine(const GameEngine& engine) {
     currentState = new std::string(*engine.currentState);
-    playerCount = new int(*engine.playerCount);
+    playerCount  = new int(*engine.playerCount);
+    deck = new Deck();
 }
 
-// Assignment operator
-GameEngine& GameEngine::operator=(const GameEngine& engine){
-    if (this != &engine){
+GameEngine& GameEngine::operator=(const GameEngine& engine) {
+    if (this != &engine) {
         delete currentState;
+        delete playerCount;
         currentState = new std::string(*engine.currentState);
-        playerCount = new int(*engine.playerCount);
+        playerCount  = new int(*engine.playerCount);
     }
     return *this;
 }
 
-// Stream insertion operator implementation
-std::ostream& operator<<(std::ostream& out, const GameEngine& engine){
+std::ostream& operator<<(std::ostream& out, const GameEngine& engine) {
     out << "Current Game State: " << *engine.currentState
         << ", Player Count: " << *engine.playerCount;
     return out;
 }
 
-// destructor *(will have to be updated when we add more attributes to the class)
-GameEngine::~GameEngine(){
+GameEngine::~GameEngine() {
     delete currentState;
     delete playerCount;
+    delete deck;
 }
 
-// Setter method for currentState
-void GameEngine::setState(const std::string& newState){
+void GameEngine::setState(const std::string& newState) {
     delete currentState;
     currentState = new std::string(newState);
 }
 
-// Getter method for currentState
 std::string GameEngine::getState() const {
     return *currentState;
 }
 
-// This method gets the current player count
 int GameEngine::getPlayerCount() const {
     return *playerCount;
 }
 
-// will add a single player to the game. Currently not maximum player limit
 bool GameEngine::addPlayer() {
     (*playerCount)++;
     std::cout << "Player " << *playerCount << " added!" << std::endl;
     return true;
 }
 
-//getter and setter for mapSelect
+// mapSelect helpers
 const std::string& GameEngine::getMapSelect() const {
     return mapSelect;
-}   
+}
+
 void GameEngine::setMapSelect(const std::string& pathName) {
     mapSelect = pathName;
-}   
+}
 
-
-
-// Find all maps in current directory
+// ================== MAP SELECTION & LOADING (NO filesystem) ==================
 
 void GameEngine::listMapsInCurrentDirectory() {
-    std::cout << "Available maps are in the 'maps' folder.\n";
-    std::cout << "Enter map filename (e.g., world.map): ";
+    std::cout << "Available maps are located in the 'maps' folder.\n";
+    std::cout << "Enter map filename (e.g., 002_I72_X-29.map): ";
+
     std::string filename;
     std::cin >> filename;
 
-
     mapSelect = "maps/" + filename;
-    }
 
-    // Gather .map files
-    std::vector<fs::path> entries;
-    for (const auto& e : fs::directory_iterator(dir, ec)) {
-        if (ec) break;
-        if (e.is_regular_file() && e.path().extension() == ".map") {
-            entries.push_back(e.path());
-        }
-    }
-
-    if (entries.empty()) {
-        std::cout << "  (no .map files found)\n";
-        mapSelect.clear();
-        return;
-    }
-
-    // Print numbered list
-    for (size_t i = 0; i < entries.size(); ++i) {
-        std::cout << "  [" << (i + 1) << "] " << entries[i].filename().string() << "\n";
-    }
-
-    // Prompt user for selection (by number OR exact filename — no trimming on filename)
-    std::cout << "\nSelect a map by number or filename: "<< std::flush;
-    if (std::cin.peek() == '\n') {
-    std::cin.ignore(1); // discard exactly the pending '\n'
-}
-
-    std::string input;
-    if (!std::getline(std::cin, input)) {
-        std::cout << "\n(end of input)\n";
-        mapSelect.clear();
-        return;
-    }
-
-    if (input.empty()) {              // guard against empty line -> reprompt
-        std::cout << "Please enter a number or filename.\n";
-        mapSelect.clear();
-        return; // or loop back to prompt again
-    }
-
-    // Helper: trim a COPY only for testing if it's a number
-    auto trim_copy = [](std::string s) {
-        auto sp = [](unsigned char c){ return std::isspace(c); };
-        while (!s.empty() && sp(s.front())) s.erase(s.begin());
-        while (!s.empty() && sp(s.back()))  s.pop_back();
-        return s;
-    };
-    auto isNumber = [](const std::string& s){
-        if (s.empty()) return false;
-        for (unsigned char c : s) if (!std::isdigit(c)) return false;
-        return true;
-    };
-
-    fs::path selected;
-    std::string numProbe = trim_copy(input);  // safe to trim ONLY for numeric detection
-
-    if (isNumber(numProbe)) {
-        // Pick by index
-        size_t idx = std::stoul(numProbe);
-        if (idx == 0 || idx > entries.size()) {
-            std::cout << "Invalid selection.\n";
-            mapSelect.clear();
-            return;
-        }
-        selected = entries[idx - 1];
-    } else {
-        // Use the filename EXACTLY as typed (no trimming)
-        fs::path candidate = dir / input;
-        if (!fs::exists(candidate, ec) || !fs::is_regular_file(candidate, ec)
-            || candidate.extension() != ".map") {
-            std::cout << "File not found or not a .map: " << input << "\n";
-            mapSelect.clear();
-            return;
-        }
-        selected = candidate;
-    }
-
-    setMapSelect(selected.string());
-    std::cout << "Selected map: " << this->getMapSelect() << "\n";
-    loadingMap(this->getMapSelect());
+    // actually load the map here:
+    loadingMap(mapSelect);
 }
 
 bool GameEngine::loadingMap(const std::string& path) {
-    namespace fs = std::filesystem;
-
-    // Optional sanity check (keeps full path exactly as given)
-    std::error_code ec;
-    if (!fs::exists(path, ec) || !fs::is_regular_file(path, ec)) {
-        std::cout << "Load FAILED: path not found or not a file: " << path << "\n";
-        return false;
-    }
-
     MapLoader loader;
-    Map* m = nullptr;
+    Map* newMap = nullptr;
     std::ostringstream diag;
 
-    if (!loader.load(path, m, diag)) {
+    if (!loader.load(path, newMap, diag)) {
         std::cout << "Load FAILED: " << path << "\n" << diag.str() << "\n";
         return false;
     }
 
+    if (m_map != nullptr) {
+        delete m_map;   // free old map if any
+    }
+    m_map = newMap;
+
+    std::cout << "Load OK: " << path << "\n" << diag.str() << "\n";
+    return true;
+
+
+// ================== validateLoadedMap, transition, startupPhase, etc. stay as you wrote ==================
+
     delete m_map;   // take ownership of the new map
-    m_map = m;
+    m_map = newMap;
 
     std::cout << "Load OK: " << path << "\n" << diag.str() << "\n";
     // If you manage states, do it here (e.g., setState("maploaded"));
@@ -307,23 +234,30 @@ void GameEngine::startupPhase() {
 
     CommandProcessor* cmdProcessor = new CommandProcessor();
 
-    bool mapLoaded = false;
-    bool mapValidated = false;
-    bool playersAdded = false;
+    bool mapLoaded     = false;
+    bool mapValidated  = false;
+    bool playersAdded  = false;
 
     while (true) {
-        std::string command = cmdProcessor->getCommand();
+        std::string command = cmdProcessor->getCommand(getState());
 
+        // ---------- loadmap ----------
         if (command.rfind("loadmap", 0) == 0) {
-            if (transition("loadmap")) mapLoaded = true;
+            if (transition("loadmap")) {
+                mapLoaded = true;
+            }
         }
+        // ---------- validatemap ----------
         else if (command == "validatemap") {
             if (!mapLoaded) {
                 std::cout << "Please load a map first.\n";
                 continue;
             }
-            if (transition("validatemap")) mapValidated = true;
+            if (transition("validatemap")) {
+                mapValidated = true;
+            }
         }
+        // ---------- addplayer <name> ----------
         else if (command.rfind("addplayer", 0) == 0) {
             if (!mapValidated) {
                 std::cout << "Please validate the map first.\n";
@@ -333,9 +267,25 @@ void GameEngine::startupPhase() {
                 std::cout << "Maximum 6 players allowed.\n";
                 continue;
             }
+
+            // extract player name after "addplayer"
+            std::string name = command.substr(9); // length("addplayer") == 9
+            while (!name.empty() && std::isspace(static_cast<unsigned char>(name.front()))) {
+                name.erase(name.begin());
+            }
+            if (name.empty()) {
+                name = "Player" + std::to_string(getPlayerCount() + 1);
+            }
+
+            // update state / playerCount
             transition("addplayer");
+
+            // actually create and store Player object
+            players.push_back(new Player(name));
+
             playersAdded = getPlayerCount() >= 2;
         }
+        // ---------- gamestart ----------
         else if (command == "gamestart") {
             if (!playersAdded || getPlayerCount() < 2) {
                 std::cout << "At least 2 players required.\n";
@@ -348,32 +298,35 @@ void GameEngine::startupPhase() {
             if (m_map) {
                 std::vector<Territory*> allTerritories = m_map->getTerritories();
                 std::shuffle(allTerritories.begin(), allTerritories.end(),
-                             std::default_random_engine(static_cast<unsigned>(time(nullptr))));
+                             std::default_random_engine(
+                                 static_cast<unsigned>(std::time(nullptr))));
 
                 int i = 0;
                 for (auto* t : allTerritories) {
-                    t->setOwner(players[i % getPlayerCount()]);
-                    i++;
+                    t->setOwner(players[i % players.size()]);
+                    ++i;
                 }
                 std::cout << "Territories distributed." << std::endl;
             }
 
             // b) randomize play order
-            std::vector<Player*> temp = players;
-            std::shuffle(temp.begin(), temp.end(),
-                         std::default_random_engine(static_cast<unsigned>(time(nullptr))));
-            players = temp;
+            std::shuffle(players.begin(), players.end(),
+                         std::default_random_engine(
+                             static_cast<unsigned>(std::time(nullptr))));
             std::cout << "Random order of play determined." << std::endl;
 
             // c) give 50 initial army units
             for (auto* p : players) {
-                p->setReinforcementPool(50);
+                p->addReinforcements(50);
             }
 
             // d) draw 2 cards each
             for (auto* p : players) {
-                p->addCard(deck->draw());
-                p->addCard(deck->draw());
+                if (!p->hand()) {
+                    p->setHand(new Hand());
+                }
+                deck->draw(p->hand());
+                deck->draw(p->hand());
             }
 
             // e) switch to play phase
@@ -381,10 +334,12 @@ void GameEngine::startupPhase() {
             std::cout << "Game state switched to PLAY phase.\n";
             break;
         }
+        // ---------- quit ----------
         else if (command == "quit") {
             std::cout << "Startup phase terminated." << std::endl;
             break;
         }
+        // ---------- unknown ----------
         else {
             std::cout << "Unknown command.\n";
         }
@@ -392,6 +347,7 @@ void GameEngine::startupPhase() {
 
     delete cmdProcessor;
 }
+
 
 void GameEngine::reinforcementPhase() {
     std::cout << "\n=== Reinforcement Phase ===\n";
@@ -653,15 +609,12 @@ void GameEngine::mainGameLoop() {
 
 void testMainGameLoop() {
     std::cout << "=== TEST: Main Game Loop (Part 3) ===" << std::endl;
-
     GameEngine engine;
 
-  
     engine.startupPhase();
 
     std::cout << "\nStarting main game loop...\n" << std::endl;
 
-   
     engine.mainGameLoop();
 
     std::cout << "\n=== END TEST: Main Game Loop (Part 3) ===" << std::endl;

@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <iosfwd>
+class Player;
 
 // ---------- Territory ----------
 struct Territory {
@@ -16,6 +17,9 @@ struct Territory {
     Territory(int id, const std::string& name, int x, int y, const std::vector<std::string>& neighbors);
 
     void addNeighbor(Territory* t);
+    Player* owner;
+
+    void setOwner(Player* p) { owner = p; }
 };
 
 // ---------- Continent ----------
