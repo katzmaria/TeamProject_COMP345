@@ -5,10 +5,14 @@ void testGameStates();
 void testPlayers();
 void testOrdersLists();
 void cardsDriver();
+void testCommandProcessor();
+void testLoggingObserver();
 
 int main() {
+    testLoggingObserver();
+    testCommandProcessor();
     // testLoadMaps();
-    testGameStates();
+    //testGameStates();
     // testPlayers(); 
 //    testOrdersLists();
     // cardsDriver();

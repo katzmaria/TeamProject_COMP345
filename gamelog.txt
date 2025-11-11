@@ -1,0 +1,21 @@
+
+Command: loadmap
+Command's Effect: Loading map file: 
+Command: validatemap
+Command's Effect: Validating map
+Command: sdaf
+Command's Effect: Invalid command in mapvalidated state. Expected 'addplayer <playername>'
+Command: ad
+Command's Effect: Invalid command in mapvalidated state. Expected 'addplayer <playername>'
+Command: ads
+Command's Effect: Invalid command in mapvalidated state. Expected 'addplayer <playername>'
+Command: loadmap
+Command's Effect: Loading map file: 
+Command: validatemap
+Command's Effect: Validating map
+Command: addplayer
+Command's Effect: Adding player: 
+Command: gamestart
+Command's Effect: Starting game
+Command: sd
+Command's Effect: Invalid command in playersadded state. Expected 'addplayer <playername>' or 'gamestart'
