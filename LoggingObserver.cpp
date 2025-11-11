@@ -72,6 +72,10 @@ void testLoggingObserver(){
 
     delete(derivedProcessor);
     delete(derivedCommand);
+
+    // this should show that CommandProcessor and Command can read commands from the console and or txt file
+    // and make a log of those commands in gamelog.txt
+    testCommandProcessor();
     
 
     // no idea have to prove the rest of part 5. Things were programmed accordingly and they just work.
