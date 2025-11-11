@@ -3,6 +3,7 @@
 #include <ctime>
 #include <algorithm> 
 #include <random>
+#include <ctime>
 
 // -------------------- Card --------------------
 Card::Card(const std::string& type) {

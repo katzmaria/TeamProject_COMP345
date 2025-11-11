@@ -14,21 +14,21 @@ class Order {
 private:
     std::string orderName;
     std::string action;
-    bool executed;
+    
 
 public:
+    bool executed;
     Order( const std::string& n);
 
     // Getters Functions
-    std::string getOrderName()  ;
-    std::string getAction() ;
-    bool isExecuted() ;
+    std::string getOrderName();
+    bool isExecuted();
 
     // Setters Functions
-    void setOrderName(  std::string& n);
-    void setAction( std::string& e);
-    void setExecuted( bool e);
-
+    void setOrderName(std::string& n);
+    void setAction(const std::string& e);  
+    void setExecuted(bool e);
+    std::string getAction(); 
     virtual bool validate();
     virtual void execute();
     friend std::ostream& operator<<(std::ostream& out,  const Order& order);
@@ -36,8 +36,16 @@ public:
 
 class Deploy : public Order { 
     public: 
-    Deploy(); 
-    bool validate(); 
+      Deploy();
+    Deploy(Player* owner, Territory* target, int armies);
+
+    bool validate() override;
+    void execute() override; 
+
+    private:
+    Player* owner_;
+    Territory* target_;
+    int armies_;
 
 };
 class Advance : public Order { 
@@ -75,6 +83,9 @@ public:
     void move(int from, int to);
     void display();
     void executeAllOrders();
+    int size() const;
+    Order* get(int index) const;
+
 };
 
 #endif

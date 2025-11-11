@@ -1,5 +1,7 @@
 #include "Cards.h"
 #include <iostream>
+#include <ctime>   
+
 
 // I created this just to check if my cards are working
 void testCards() {
@@ -34,6 +36,6 @@ void testCards() {
 }
 
 void cardsDriver() {
-    srand(time(nullptr));
+    std::srand(static_cast<unsigned>(std::time(nullptr)));
     testCards();
 }

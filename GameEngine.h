@@ -1,8 +1,11 @@
 #pragma once
+#include <vector>
 #include <string>
 #include <iostream>
-
 #include "Map.h"
+
+class Player;         
+class Deck;  
 class GameEngine {
     private:
         std::string* currentState;
@@ -28,5 +31,11 @@ class GameEngine {
         void setMapSelect(const std::string& pathName);
         bool loadingMap(const std::string& path);
         bool validateLoadedMap();
+        void startupPhase();
 
+        void mainGameLoop();
+        void reinforcementPhase();
+        void issueOrdersPhase();
+        void executeOrdersPhase();
 };
+

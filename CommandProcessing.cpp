@@ -3,6 +3,7 @@
 #include <string>
 #include <fstream>
 #include "CommandProcessing.h"
+#include <limits>
 
 // 
 // CommandProcessor class implementation

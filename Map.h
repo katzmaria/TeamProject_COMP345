@@ -49,7 +49,9 @@ public:
 
     void resolveAllNeighbors();
     friend std::ostream& operator<<(std::ostream& os, const Map& m);
-
+    
+    const std::vector<Continent*>& getContinents() const;
+    const std::vector<Territory*>& getTerritories() const;
 private:
     std::vector<Continent*> continents;
     std::vector<Territory*> territories;

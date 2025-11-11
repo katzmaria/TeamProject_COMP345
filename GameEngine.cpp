@@ -2,9 +2,10 @@
 #include <string>
 #include <iostream>
 #include <vector>
-#include <filesystem>
 #include "Map.h"
 #include <sstream>
+#include <algorithm>
+
 // default constructor will initialize the GameEngine object to the start state
 GameEngine::GameEngine() {
     currentState = new std::string("start");
@@ -76,16 +77,13 @@ void GameEngine::setMapSelect(const std::string& pathName) {
 // Find all maps in current directory
 
 void GameEngine::listMapsInCurrentDirectory() {
-    namespace fs = std::filesystem;
+    std::cout << "Available maps are in the 'maps' folder.\n";
+    std::cout << "Enter map filename (e.g., world.map): ";
+    std::string filename;
+    std::cin >> filename;
 
-    fs::path dir = fs::current_path() / "maps";
-    std::cout << "Maps in '" << dir.string() << "':\n";
 
-    std::error_code ec;
-    if (!fs::exists(dir, ec) || !fs::is_directory(dir, ec)) {
-        std::cout << "  (directory not found)\n";
-        mapSelect.clear();
-        return;
+    mapSelect = "maps/" + filename;
     }
 
     // Gather .map files
@@ -393,4 +391,278 @@ void GameEngine::startupPhase() {
     }
 
     delete cmdProcessor;
+}
+
+void GameEngine::reinforcementPhase() {
+    std::cout << "\n=== Reinforcement Phase ===\n";
+
+    if (!m_map) {
+        std::cout << "No map loaded – skipping reinforcement.\n";
+        return;
+    }
+
+    const std::vector<Continent*>& continents     = m_map->getContinents();
+    const std::vector<Territory*>& allTerritories = m_map->getTerritories();
+
+    for (Player* p : players) {
+        if (!p) continue;
+
+        const std::vector<Territory*>* ownedPtr = p->territories();
+        const auto& owned = ownedPtr ? *ownedPtr : std::vector<Territory*>();
+
+        int numOwned = static_cast<int>(owned.size());
+        if (numOwned == 0) {
+            std::cout << p->name()
+                      << " has no territories and receives 0 reinforcement armies.\n";
+            continue;
+        }
+
+        // base = floor(#territories / 3)
+        int base = numOwned / 3;
+
+       
+        int continentBonus = 0;
+        for (Continent* c : continents) {
+            if (!c) continue;
+
+            bool ownsAll = true;
+            bool hasAny  = false;
+
+            for (Territory* t : allTerritories) {
+                if (!t) continue;
+                if (t->continentID != c->continentID) continue;
+
+                hasAny = true;
+                // if this territory of that continent isnt owned player doesn't own the continent
+                if (std::find(owned.begin(), owned.end(), t) == owned.end()) {
+                    ownsAll = false;
+                    break;
+                }
+            }
+
+            if (hasAny && ownsAll) {
+                continentBonus += c->bonus;
+            }
+        }
+
+        int total = base + continentBonus;
+        if (total < 3) {
+            total = 3;  // minimum 3 armies if player owns at least 1 territory
+        }
+
+        p->addReinforcements(total);
+
+        std::cout << p->name()
+                  << " owns " << numOwned << " territories and receives "
+                  << total << " reinforcement armies (" << base
+                  << " base + " << continentBonus
+                  << " continent bonus). Pool now: "
+                  << p->getReinforcementPool() << "\n";
+    }
+}
+
+void GameEngine::issueOrdersPhase() {
+    std::cout << "\n=== Issue Orders Phase ===\n";
+
+    if (players.empty()) {
+        std::cout << "No players in the game.\n";
+        return;
+    }
+
+    const std::size_t n = players.size();
+    std::vector<bool> done(n, false);
+    std::size_t remaining = n;
+
+    while (remaining > 0) {
+        bool anyIssuedThisRound = false;
+
+        for (std::size_t i = 0; i < n; ++i) {
+            if (done[i]) continue;
+
+            Player* p = players[i];
+            if (!p) {
+                done[i] = true;
+                --remaining;
+                continue;
+            }
+
+            const auto* terrs = p->territories();
+            if (!terrs || terrs->empty()) {
+                std::cout << p->name()
+                          << " has no territories and cannot issue orders this turn.\n";
+                done[i] = true;
+                --remaining;
+                continue;
+            }
+
+            std::cout << "\n--- " << p->name() << "'s turn to issue orders ---\n";
+            std::cout << "Reinforcement pool: " << p->getReinforcementPool() << "\n";
+
+            std::cout << "Issue an order? (y/n): ";
+            char choice;
+            std::cin >> choice;
+            choice = static_cast<char>(std::tolower(choice));
+            if (choice != 'y') {
+                done[i] = true;
+                --remaining;
+                continue;
+            }
+
+            std::string kind;
+            if (p->getReinforcementPool() > 0) {
+                // Assignment rule: while you have reinforcements, you only issue Deploy orders
+                kind = "deploy";
+                std::cout << "You still have reinforcement armies, issuing a Deploy order.\n";
+            } else {
+                std::cout << "Enter order type (advance, bomb, blockade, airlift, negotiate, deploy): ";
+                std::cin >> kind;
+            }
+
+            Order* issued = p->issueOrder(kind);
+            if (issued) {
+                std::cout << "Issued a \"" << kind << "\" order.\n";
+                anyIssuedThisRound = true;
+            } else {
+                std::cout << "No order issued, marking " << p->name()
+                          << " done for this turn.\n";
+                done[i] = true;
+                --remaining;
+            }
+        }
+
+        //if nobody issued anything 
+        if (!anyIssuedThisRound) {
+            break;
+        }
+    }
+
+    std::cout << "\n=== End of Issue Orders Phase ===\n";
+}
+
+void GameEngine::executeOrdersPhase() {
+    std::cout << "\n=== Execute Orders Phase ===\n";
+
+    if (players.empty()) {
+        std::cout << "No players in the game.\n";
+        return;
+    }
+
+    //  1: Execute all DEPLOY orders first (round-robin) 
+    bool executedSomething = true;
+    while (executedSomething) {
+        executedSomething = false;
+
+        for (Player* p : players) {
+            if (!p) continue;
+
+            OrdersList* ol = p->orders();
+            if (!ol) continue;
+
+            int sz = ol->size();
+            int deployIndex = -1;
+
+            // find first Deploy order in this player's list
+            for (int i = 0; i < sz; ++i) {
+                Order* o = ol->get(i);
+                if (o && o->getOrderName() == "Deploy") {
+                    deployIndex = i;
+                    break;
+                }
+            }
+
+            if (deployIndex != -1) {
+                Order* o = ol->get(deployIndex);
+                std::cout << "Executing Deploy order...\n";
+                o->execute();
+                std::cout << "  -> " << o->getAction() << "\n";
+
+                // remove executed Deploy from the list
+                ol->remove(deployIndex);
+                executedSomething = true;
+            }
+        }
+    }
+
+    // 2: Execute remaining orders round-robin 
+    bool ordersRemain = true;
+    while (ordersRemain) {
+        ordersRemain = false;
+
+        for (Player* p : players) {
+            if (!p) continue;
+
+            OrdersList* ol = p->orders();
+            if (!ol) continue;
+
+            int sz = ol->size();
+            if (sz == 0) continue;   // this player has no more orders
+
+            ordersRemain = true;     // at least one player still has orders
+
+            Order* o = ol->get(0);   // execute from the front
+            if (!o) {
+                ol->remove(0);
+                continue;
+            }
+
+            std::cout << "Executing order: " << o->getOrderName() << "\n";
+            o->execute();
+            std::cout << "  -> " << o->getAction() << "\n";
+
+            // remove executed order 
+            ol->remove(0);
+        }
+    }
+
+    std::cout << "=== End of Execute Orders Phase ===\n";
+}
+
+void GameEngine::mainGameLoop() {
+    std::cout << "\n=== Main Game Loop ===\n";
+
+    bool gameOver = false;
+    while (!gameOver) {
+        reinforcementPhase();
+        issueOrdersPhase();
+        executeOrdersPhase();
+
+        // remove players with no territories
+        for (auto it = players.begin(); it != players.end(); ) {
+            Player* p = *it;
+            const auto* terrs = p->territories();
+            if (!terrs || terrs->empty()) {
+                std::cout << p->name() << " has been eliminated.\n";
+                delete p;                // if you own the pointer
+                it = players.erase(it);  // remove from vector
+            } else {
+                ++it;
+            }
+        }
+
+        // win condition: one player owns all territories
+        if (players.size() == 1) {
+            std::cout << "\n*** " << players[0]->name()
+                      << " controls all territories and wins the game! ***\n";
+            gameOver = true;
+        } else if (players.empty()) {
+            std::cout << "\nNo players remain. Game over.\n";
+            gameOver = true;
+        }
+    }
+}
+
+void testMainGameLoop() {
+    std::cout << "=== TEST: Main Game Loop (Part 3) ===" << std::endl;
+
+    GameEngine engine;
+
+  
+    engine.startupPhase();
+
+    std::cout << "\nStarting main game loop...\n" << std::endl;
+
+   
+    engine.mainGameLoop();
+
+    std::cout << "\n=== END TEST: Main Game Loop (Part 3) ===" << std::endl;
 }

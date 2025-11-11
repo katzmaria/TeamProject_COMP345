@@ -2,13 +2,17 @@
 
 void testLoadMaps();
 void testGameStates();
+void testStartupPhase();
 void testPlayers();
 void testOrdersLists();
+void testMainGameLoop();
 
 int main() {
     testLoadMaps();
     testGameStates();
-    testPlayers(); 
+    testStartupPhase();
+    testPlayers();
     testOrdersLists();
+    testMainGameLoop();    // <- call Part 3 test here
     return 0;
 }

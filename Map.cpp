@@ -377,3 +377,10 @@ std::ostream& operator<<(std::ostream& os, const Map& m) {
     return os;
 }
 
+const std::vector<Continent*>& Map::getContinents() const {
+    return continents;
+}
+
+const std::vector<Territory*>& Map::getTerritories() const {
+    return territories;
+}

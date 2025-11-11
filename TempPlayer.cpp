@@ -3,31 +3,31 @@
 #include <iostream>
 #include "Orders.h" 
 #include "Map.h"   
-#include "Cards.h"         
-// default constructor 
-Player::Player()
-: name_(new std::string("Unnamed")),
-  territories_(new std::vector<Territory*>()),
-  hand_(nullptr),
-  orders_(nullptr) {}
-  reinforcementPool_(new int(0)) {}
+#include "Cards.h"   
 
-// parameterized constructor 
+//default const
+Player::Player()
+    : name_(new std::string("Unnamed")),
+      territories_(new std::vector<Territory*>()),
+      hand_(nullptr),
+      orders_(nullptr),
+      reinforcementPool_(new int(0)) {}
+//param constructor
 Player::Player(const std::string& name)
-: name_(new std::string(name)),
-  territories_(new std::vector<Territory*>()),
-  hand_(nullptr),
-  orders_(nullptr) {}
-  reinforcementPool_(new int(0)) {}
+    : name_(new std::string(name)),
+      territories_(new std::vector<Territory*>()),
+      hand_(nullptr),
+      orders_(nullptr),
+      reinforcementPool_(new int(0)) {}
 
 // copy constructor (deep copy for Hand/OrdersList; shallow for Territory* list)
 Player::Player(const Player& other)
-: name_(new std::string(*other.name_)),
-  territories_(new std::vector<Territory*>(*other.territories_)),
-  hand_(other.hand_ ? new Hand(*other.hand_) : nullptr),
-  orders_(other.orders_ ? new OrdersList(*other.orders_) : nullptr)
-  reinforcementPool_(new int(*other.reinforcementPool_)) 
-{}
+    : name_(new std::string(*other.name_)),
+      territories_(new std::vector<Territory*>(*other.territories_)),
+      hand_(other.hand_ ? new Hand(*other.hand_) : nullptr),
+      orders_(other.orders_ ? new OrdersList(*other.orders_) : nullptr),
+      reinforcementPool_(new int(*other.reinforcementPool_)) {}
+
 
 // copy assignment
 Player& Player::operator=(const Player& other) {
@@ -134,13 +134,60 @@ std::vector<Territory*> Player::toAttack() const {
     return result;
 }
 
-// ----- simple order issuing (now works with your current Orders.cpp) -----
-Order* Player::issueOrder(const std::string& kind /*, Territory* src, Territory* tgt, int armies */) {
-    if (!orders_) orders_ = new OrdersList();
+// changed version
+Order* Player::issueOrder(const std::string& kind) {
+    if (!orders_) {
+        orders_ = new OrdersList();
+    }
 
+    if (kind == "deploy") {
+        int pool = getReinforcementPool();
+        if (pool <= 0) {
+            std::cout << *name_ << " has no reinforcement armies.\n";
+            return nullptr;
+        }
+
+        const auto* terrs = territories();
+        if (!terrs || terrs->empty()) {
+            std::cout << *name_ << " has no territories to deploy to.\n";
+            return nullptr;
+        }
+
+        std::cout << "\nDeploy order for " << *name_ << "\n";
+        std::cout << "Reinforcement pool: " << pool << "\n";
+        std::cout << "Select a territory index:\n";
+
+        for (std::size_t i = 0; i < terrs->size(); ++i) {
+            std::cout << i << ") " << terrs->at(i)->name << "\n";
+        }
+
+        std::size_t idx;
+        std::cin >> idx;
+        if (idx >= terrs->size()) {
+            std::cout << "Invalid territory index.\n";
+            return nullptr;
+        }
+
+        int amount;
+        std::cout << "How many armies to deploy? (1.." << pool << "): ";
+        std::cin >> amount;
+        if (amount <= 0 || amount > pool) {
+            std::cout << "Invalid amount.\n";
+            return nullptr;
+        }
+
+        Territory* target = terrs->at(idx);
+
+        Order* created = new Deploy(this, target, amount);
+        orders_->add(created);
+
+        // spend from reinforcement pool
+        setReinforcementPool(pool - amount);
+
+        return created;
+    }
     Order* created = nullptr;
-    if      (kind == "deploy")    created = new Deploy();
-    else if (kind == "advance")   created = new Advance();
+    if      (kind == "advance")   created = new Advance();
     else if (kind == "bomb")      created = new Bomb();
     else if (kind == "blockade")  created = new Blockade();
     else if (kind == "airlift")   created = new Airlift();
@@ -150,8 +197,11 @@ Order* Player::issueOrder(const std::string& kind /*, Territory* src, Territory*
         orders_->add(created);
         return created;
     }
+
+    std::cout << "Unknown order type: " << kind << "\n";
     return nullptr;
 }
+
 
 // toString()
 std::ostream& operator<<(std::ostream& os, const Player& p) {

@@ -1,5 +1,5 @@
 #include "Orders.h"
-
+#include "Map.h"
 // Order Class
 Order::Order(const std::string& n) {
     orderName = n;
@@ -22,9 +22,10 @@ bool Order::isExecuted() {
 void Order::setOrderName( std::string& n) { 
     orderName = n; 
 }
-void Order::setAction( std::string& e) { 
-    action = e; 
+void Order::setAction(const std::string& e) {
+    action = e;
 }
+
 void Order::setExecuted(bool e) {
      executed = e; 
     }
@@ -57,12 +58,16 @@ std::ostream& operator<<(std::ostream& out, const Order& order) {
 }
 
 //  Orders Subclasses 
-Deploy::Deploy() : Order("Deploy") {
+Deploy::Deploy()
+    : Order("Deploy"), owner_(nullptr), target_(nullptr), armies_(0) {}
 
+
+Deploy::Deploy(Player* owner, Territory* target, int armies)
+    : Order("Deploy"), owner_(owner), target_(target), armies_(armies) {}
+
+bool Deploy::validate() {
+    return owner_ != nullptr && target_ != nullptr && armies_ > 0;
 }
-bool Deploy::validate() { 
-    return true;
- }
 
 Advance::Advance() : Order("Advance") {
 
@@ -136,4 +141,28 @@ void OrdersList::executeAllOrders() {
     for (int i = 0; i < orders.size(); i++) {
         orders[i]->execute();
     }
+}
+
+void Deploy::execute() {
+    if (!validate()) {
+        setAction("Deploy order invalid.");
+        return;
+    }
+
+    // In Part 4 add armies to target_ here.
+    setAction("Deploy " + std::to_string(armies_) +
+          " armies to " + target_->name);
+
+    executed = true;
+}
+
+int OrdersList::size() const {
+    return static_cast<int>(orders.size());
+}
+
+Order* OrdersList::get(int i) const {
+    if (i < 0 || i >= static_cast<int>(orders.size())) {
+        return nullptr;
+    }
+    return orders[i];
 }

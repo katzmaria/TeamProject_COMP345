@@ -48,4 +48,8 @@ public:
 
     int  getReinforcementPool() const;
     void setReinforcementPool(int value);
+    void addReinforcements(int delta);   
+    std::vector<Territory*> toDefend() const;
+    std::vector<Territory*> toAttack() const;
+
 };
