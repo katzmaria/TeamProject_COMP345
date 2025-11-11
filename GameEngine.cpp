@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <ctime>
 #include <random>
+#include <filesystem>
 
 // ================== basic GameEngine methods ==================
 
@@ -80,16 +81,97 @@ void GameEngine::setMapSelect(const std::string& pathName) {
 // ================== MAP SELECTION & LOADING (NO filesystem) ==================
 
 void GameEngine::listMapsInCurrentDirectory() {
-    std::cout << "Available maps are located in the 'maps' folder.\n";
-    std::cout << "Enter map filename (e.g., 002_I72_X-29.map): ";
+     namespace fs = std::filesystem;
 
-    std::string filename;
-    std::cin >> filename;
+    fs::path dir = fs::current_path() / "maps";
+    std::cout << "Maps in '" << dir.string() << "':\n";
 
-    mapSelect = "maps/" + filename;
+    std::error_code ec;
+    if (!fs::exists(dir, ec) || !fs::is_directory(dir, ec)) {
+        std::cout << "  (directory not found)\n";
+        mapSelect.clear();
+        return;
+    }
 
-    // actually load the map here:
-    loadingMap(mapSelect);
+    // Gather .map files
+    std::vector<fs::path> entries;
+    for (const auto& e : fs::directory_iterator(dir, ec)) {
+        if (ec) break;
+        if (e.is_regular_file() && e.path().extension() == ".map") {
+            entries.push_back(e.path());
+        }
+    }
+
+    if (entries.empty()) {
+        std::cout << "  (no .map files found)\n";
+        mapSelect.clear();
+        return;
+    }
+
+    // Print numbered list
+    for (size_t i = 0; i < entries.size(); ++i) {
+        std::cout << "  [" << (i + 1) << "] " << entries[i].filename().string() << "\n";
+    }
+
+    // Prompt user for selection (by number OR exact filename — no trimming on filename)
+    std::cout << "\nSelect a map by number or filename: "<< std::flush;
+    if (std::cin.peek() == '\n') {
+    std::cin.ignore(1); // discard exactly the pending '\n'
+}
+
+    std::string input;
+    if (!std::getline(std::cin, input)) {
+        std::cout << "\n(end of input)\n";
+        mapSelect.clear();
+        return;
+    }
+
+    if (input.empty()) {              // guard against empty line -> reprompt
+        std::cout << "Please enter a number or filename.\n";
+        mapSelect.clear();
+        return; // or loop back to prompt again
+    }
+
+    // Helper: trim a COPY only for testing if it's a number
+    auto trim_copy = [](std::string s) {
+        auto sp = [](unsigned char c){ return std::isspace(c); };
+        while (!s.empty() && sp(s.front())) s.erase(s.begin());
+        while (!s.empty() && sp(s.back()))  s.pop_back();
+        return s;
+    };
+    auto isNumber = [](const std::string& s){
+        if (s.empty()) return false;
+        for (unsigned char c : s) if (!std::isdigit(c)) return false;
+        return true;
+    };
+
+    fs::path selected;
+    std::string numProbe = trim_copy(input);  // safe to trim ONLY for numeric detection
+    
+    if (isNumber(numProbe)) {
+        // Pick by index
+        size_t idx = std::stoul(numProbe);
+        if (idx == 0 || idx > entries.size()) {
+            std::cout << "Invalid selection.\n";
+            mapSelect.clear();
+            return;
+        }
+        selected = entries[idx - 1];
+    } else {
+        // Use the filename EXACTLY as typed (no trimming)
+        fs::path candidate = dir / input;
+        if (!fs::exists(candidate, ec) || !fs::is_regular_file(candidate, ec)
+            || candidate.extension() != ".map") {
+            std::cout << "File not found or not a .map: " << input << "\n";
+            mapSelect.clear();
+            return;
+        }
+        selected = candidate;
+    }
+
+    setMapSelect(selected.string());
+    std::cout << "Selected map: " << this->getMapSelect() << "\n";
+    loadingMap(this->getMapSelect());
 }
 
 bool GameEngine::loadingMap(const std::string& path) {
