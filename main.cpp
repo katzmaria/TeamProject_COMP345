@@ -1,27 +1,87 @@
 #include <iostream>
+#include <string>
+#include "GameEngine.h"
 
-void testMainGameLoop();
-void testOrderExecution();
+// Forward declarations for all test functions
+void testLoadMaps();       // Part 1: Map
+void testStartupPhase();   // Part 2: Game Startup Phase
+void testMainGameLoop();   // Part 3: Main Game Loop
+void testOrderExecution(); // Part 4: Order Execution
+void testCards();          // Part 5: Cards
+void testLoggingObserver(); // Part 5: Logging Observer
+void testOrdersLists();    // Additional: Orders Lists
+void testPlayers();        // Additional: Players
+void testCommandProcessor(); // Additional: Command Processing
+void testGameStates();     // Additional: Game States
 
-int main() {
-    std::cout << "========================================\n";
-    std::cout << "COMP 345 - Warzone Game\n";
-    std::cout << "========================================\n";
-    std::cout << "Select test to run:\n";
-    std::cout << "1. Test Order Execution (Part 4)\n";
-    std::cout << "2. Test Main Game Loop\n";
-    std::cout << "Enter choice (1 or 2): ";
+int main(int argc, char* argv[]) {
+    // Check for command line argument --test
+    bool runAllTests = false;
+    if (argc > 1) {
+        std::string arg = argv[1];
+        if (arg == "--test" || arg == "-test") {
+            runAllTests = true;
+        }
+    }
     
-    int choice;
-    std::cin >> choice;
-    
-    if (choice == 1) {
+    if (runAllTests) {
+        // Run all 5 parts for assignment submission
+        std::cout << "\n========================================\n";
+        std::cout << "COMP 345 - Assignment 2\n";
+        std::cout << "Running All Tests\n";
+        std::cout << "========================================\n\n";
+        
+        std::cout << "\n=== PART 1: Map ===\n";
+        testLoadMaps();
+        
+        std::cout << "\n=== PART 2: Game Startup Phase ===\n";
+        testStartupPhase();
+        
+        std::cout << "\n=== PART 3: Main Game Loop ===\n";
+        testMainGameLoop();
+        
+        std::cout << "\n=== PART 4: Order Execution ===\n";
         testOrderExecution();
-    } else if (choice == 2) {
-        testMainGameLoop();
+        
+        std::cout << "\n=== PART 5: Logging Observer ===\n";
+        testLoggingObserver();
+        
+        std::cout << "\n========================================\n";
+        std::cout << "All Tests Complete\n";
+        std::cout << "========================================\n\n";
+        
     } else {
-        std::cout << "Invalid choice. Running main game loop by default.\n";
-        testMainGameLoop();
+        // Interactive menu
+        std::cout << "========================================\n";
+        std::cout << "COMP 345 - Warzone Game\n";
+        std::cout << "========================================\n";
+        std::cout << "Select option:\n";
+        std::cout << "1. Test Game Startup Phase (Part 2)\n";
+        std::cout << "2. Test Order Execution (Part 4)\n";
+        std::cout << "3. Play Full Game\n";
+        std::cout << "Enter choice (1-3): ";
+        
+        int choice;
+        std::cin >> choice;
+        
+        switch (choice) {
+            case 1:
+                testStartupPhase();
+                break;
+                
+            case 2:
+                testOrderExecution();
+                break;
+                
+            case 3:
+                std::cout << "\n=== Starting Full Game ===\n";
+                testMainGameLoop();
+                break;
+                
+            default:
+                std::cout << "Invalid choice.\n";
+                break;
+        }
     }
     
     return 0;

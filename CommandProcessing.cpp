@@ -4,6 +4,7 @@
 #include <fstream>
 #include "CommandProcessing.h"
 #include <limits>
+#include "LoggingObserver.h"
 
 // 
 // CommandProcessor class implementation
@@ -52,8 +53,10 @@ void CommandProcessor::readCommand() {
 
 // saveCommand method saves the command into the list
 void CommandProcessor::saveCommand(const std::string& command) {
-    Command cmd(command);
+    Command cmd = Command(command);
     commands->push_back(cmd);
+    // notify the subject
+    notify(*this);
 }
 
 // this is a getter method, it retrieves the next command from the list and returns its string
@@ -62,17 +65,35 @@ std::string CommandProcessor::getCommand(const std::string& gameState) {
     // if the list is not empty, retrieve the first command
     if (!commands->empty()){
         // the command is removed from the list after being retrieved
-        Command* cmd = new Command(commands->front());
+        Command* cmd = new Command(commands->front());   
+
+        // create a logObserver and attach it to the current command object.
+        // this will need to be removed and deleted just before the Command object is deleted
+        logObserver observer;
+        cmd->attach(observer);
+        
+
         //IMPORTANT: because the command is removed, when getCommand is called it should also log
         // the command's effect
         commands->pop_front();
         // validate the command before returning
         bool isValid = validate(cmd, gameState);
+
+        // once validate, detach the observer
+        cmd->detach(observer);
+
         std::string commandStr = cmd->getCommand();
+        std::string baseCommand = commandStr;
+        size_t space = commandStr.find(' ');
+
+        if (space != std::string::npos){
+            baseCommand = commandStr.substr(0, space);
+        }
+
         if (isValid){
             // log the effect of the command cmd
             delete cmd;
-            return commandStr;
+            return baseCommand;
         }
         // if the command is invalid, return "invalid"
         else {
@@ -156,6 +177,14 @@ bool CommandProcessor::validate(Command* cmd, const std::string& currentState) {
     return isValid;
 }
 
+// this function will create a string(command) that will be save in "gamelog.txt"
+std::string CommandProcessor::stringToLog(){
+    std::string string = "Command: ";
+    // for now use the command at the from of the list
+    string += commands->back().getCommand();
+    return string;
+}
+
 //
 // Command class implementation
 //
@@ -206,26 +235,25 @@ Command::~Command() {
 void Command::saveEffect(const std::string& eff) {
     delete effect;
     effect = new std::string(eff);
+    // notify the Observer
+    notify(*this);
 }
 
 // simple getter method to get the command string
 std::string Command::getCommand() const {
-    //return *command;
-    // Get command string and split into command and argument
-    std::string commandStr = *command;
-    std::string baseCommand = commandStr;
-    std::string argument = "";
-    size_t space = commandStr.find(' ');
-    
-    if (space != std::string::npos) {
-        baseCommand = commandStr.substr(0, space);
-        argument = commandStr.substr(space + 1);
-    }
-    return baseCommand;
+    return *command;
 }
+
 // simple getter method to get the command effect
 std::string Command::getEffect() const {
     return *effect;
+}
+
+// this function will create a string(effect) that will be save in "gamelog.txt"
+std::string Command::stringToLog(){
+    std::string string = "Command's Effect: ";
+    string += getEffect();
+    return string;
 }
 
 //
@@ -279,16 +307,30 @@ std::string FileCommandProcessorAdapter::getCommand(const std::string& gameState
     if (!commandList->empty()) {
         Command* cmd = new Command(commandList->front());
         commandList->pop_front();
+
+        // create a logObserver and attach it to the current command object.
+        // this will need to be removed and deleted just before the Command object is deleted
+        logObserver observer;
+        cmd->attach(observer);
         
         bool isValid = validate(cmd, gameState);
+
+        cmd->detach(observer);
+
         std::string commandStr = cmd->getCommand();
+        std::string baseCommand = commandStr;
+        size_t space = commandStr.find(' ');
+
+        if (space != std::string::npos){
+            baseCommand = commandStr.substr(0, space);
+        }
         
         // Print the command's effect using the getter
         std::cout << "Effect: " << cmd->getEffect() << std::endl;
         
         if (isValid) {
             delete cmd;
-            return commandStr;
+            return baseCommand;
         } else {
             delete cmd;
             return "invalid";

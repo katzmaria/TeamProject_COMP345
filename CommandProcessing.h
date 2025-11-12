@@ -4,11 +4,12 @@
 #include <list>
 #include <fstream>
 #include <iostream>
+#include "LoggingObserver.h"
 
 // IMPORTANT: refer to team project assignment 2 part 1 for details about the implementation of
 // the classes below.
 
-class Command {
+class Command : public ILoggable, public Subject {
     private: 
         std::string* command;
         std::string* effect;
@@ -22,9 +23,10 @@ class Command {
         void saveEffect(const std::string& eff);
         std::string getCommand() const;
         std::string getEffect() const;
+        std::string stringToLog();
 };
 
-class CommandProcessor {
+class CommandProcessor : public ILoggable, public Subject {
     private:
         std::list<Command>* commands;
     protected:
@@ -39,6 +41,7 @@ class CommandProcessor {
         ~CommandProcessor();
         virtual std::string getCommand(const std::string& gameState);
         bool validate(Command* cmd, const std::string& currentState);
+        std::string stringToLog();
 };
 
 class FileLineReader {

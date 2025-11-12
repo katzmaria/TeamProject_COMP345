@@ -6,8 +6,8 @@
 //testing cards function
 void testCards() {
     std::cout << "=== Testing Cards ===" << std::endl;
- 
-    
+
+    // Create deck with all types
     Deck deck;
     deck.addCard(new Card("bomb"));
     deck.addCard(new Card("reinforcement"));

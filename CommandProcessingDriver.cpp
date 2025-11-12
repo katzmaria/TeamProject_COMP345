@@ -1,11 +1,17 @@
 #include "CommandProcessing.h"
 #include "GameEngine.h"
+#include "LoggingObserver.h"
 #include <iostream>
 #include <limits>  
 
 void testCommandProcessor(){
     CommandProcessor processor = CommandProcessor();
     GameEngine engine = GameEngine();
+
+    // needs an observer to write to the file
+    logObserver observer;
+    processor.attach(observer);
+    // this code is currently un tested
 
     std::cout << "1. Command Line processing Test\n2. File processing test\nEnter choice: ";
     int choice;
@@ -26,6 +32,8 @@ void testCommandProcessor(){
     }
     else if (choice == 2) {
         FileCommandProcessorAdapter fileProcessor = FileCommandProcessorAdapter("commands.txt");
+        // attach an observer here too
+        fileProcessor.attach(observer);
         std::cout << "Current state of engine: " << engine.getState() << std::endl;
         for (int i = 0; i < 5; i++) {
             std::string command = fileProcessor.getCommand(engine.getState());
@@ -44,8 +52,3 @@ void testCommandProcessor(){
     }
 }
 
-// for testing purposes only
-// int main(){
-//     testCommandProcessor();
-//     return 0;
-// }
