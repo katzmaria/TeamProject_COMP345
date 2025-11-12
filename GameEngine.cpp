@@ -16,16 +16,28 @@
 
 // ================== basic GameEngine methods ==================
 
+
+//Just creating the deck with cards
+void seedDeck(Deck* deck) {
+    
+    for (int i = 0; i < 10; ++i) deck->addCard(new Card("Airlift"));
+    for (int i = 0; i < 10; ++i) deck->addCard(new Card("Bomb"));
+    for (int i = 0; i < 10; ++i) deck->addCard(new Card("Blockade"));
+    for (int i = 0; i < 10; ++i) deck->addCard(new Card("Negotiate")); // Diplomacy
+}
+
 GameEngine::GameEngine() {
     currentState = new std::string("start");
     playerCount  = new int(0);
     deck = new Deck();
+    seedDeck(deck);
 }
 
 GameEngine::GameEngine(const GameEngine& engine) {
     currentState = new std::string(*engine.currentState);
     playerCount  = new int(*engine.playerCount);
     deck = new Deck();
+    seedDeck(deck);
 }
 
 GameEngine& GameEngine::operator=(const GameEngine& engine) {
@@ -544,6 +556,8 @@ void GameEngine::reinforcementPhase() {
     }
 }
 
+
+
 void GameEngine::issueOrdersPhase() {
     std::cout << "\n=== Issue Orders Phase ===\n";
 
@@ -654,6 +668,23 @@ void GameEngine::issueOrdersPhase() {
                 done[i] = true;
                 --remaining;
             }
+
+            std::cout << "\n" << p->name() << ", view your hand? (y/n): ";
+            char view;
+            std::cin >> view;
+            view = static_cast<char>(std::tolower(view));
+            if (view == 'y') {
+                if (p->hand()) {
+                    std::cout << "\n=== " << p->name() << "'s Hand ===\n";
+                    std::cout << *(p->hand()) << "\n";   // relies on operator<<(std::ostream&, const Hand&)
+                } else {
+                    std::cout << p->name() << " has no hand.\n";
+                }
+            }
+
+
+
+
         }
 
         //if nobody issued anything 
