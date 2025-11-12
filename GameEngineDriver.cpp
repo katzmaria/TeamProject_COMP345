@@ -43,4 +43,16 @@ void testStartupPhase() {
               << engine.getState() << std::endl;
 }
 
+// function to test the main game loop: Part 3 of the assignment
+void testMainGameLoop() {
+    std::cout << "=== TEST: Main Game Loop (Part 3) ===" << std::endl;
+    GameEngine engine;
 
+    engine.startupPhase();
+
+    std::cout << "\nStarting main game loop...\n" << std::endl;
+
+    engine.mainGameLoop();
+
+    std::cout << "\n=== END TEST: Main Game Loop (Part 3) ===" << std::endl;
+}
