@@ -410,18 +410,42 @@ void GameEngine::startupPhase() {
                 p->addReinforcements(50);
             }
 
-            // d) draw 2 cards each
+            // d) Initialize deck with special order cards (bomb, blockade, airlift, negotiate)
+            // Create multiple copies of each card type for variety
+            for (int i = 0; i < 10; ++i) {
+                deck->addCard(new Card("bomb"));
+                deck->addCard(new Card("blockade"));
+                deck->addCard(new Card("airlift"));
+                deck->addCard(new Card("negotiate"));
+            }
+            std::cout << "Deck initialized with 40 cards (10 of each type).\n";
+
+            // e) draw 2 cards each
             for (auto* p : players) {
                 if (!p->hand()) {
                     p->setHand(new Hand());
                 }
                 deck->draw(p->hand());
                 deck->draw(p->hand());
+                std::cout << p->name() << " drew 2 initial cards.\n";
             }
 
             // e) switch to play phase
             setState("play");
             std::cout << "Game state switched to PLAY phase.\n";
+            
+            // Show each player their starting hand
+            std::cout << "\n=== Starting Hands ===\n";
+            for (auto* p : players) {
+                if (p->hand()) {
+                    std::cout << p->name() << "'s hand: ";
+                    for (Card* c : p->hand()->getCards()) {
+                        std::cout << c->getType() << " ";
+                    }
+                    std::cout << "\n";
+                }
+            }
+            
             break;
         }
         // ---------- quit ----------
@@ -553,6 +577,15 @@ void GameEngine::issueOrdersPhase() {
 
             std::cout << "\n--- " << p->name() << "'s turn to issue orders ---\n";
             std::cout << "Reinforcement pool: " << p->getReinforcementPool() << "\n";
+            
+            // Show player's hand
+            if (p->hand() && !p->hand()->getCards().empty()) {
+                std::cout << "Cards in hand: ";
+                for (Card* c : p->hand()->getCards()) {
+                    std::cout << "[" << c->getType() << "] ";
+                }
+                std::cout << "\n";
+            }
 
             std::cout << "Issue an order? (y/n): ";
             char choice;
@@ -570,11 +603,45 @@ void GameEngine::issueOrdersPhase() {
                 kind = "deploy";
                 std::cout << "You still have reinforcement armies, issuing a Deploy order.\n";
             } else {
-                std::cout << "Enter order type (advance, bomb, blockade, airlift, negotiate, deploy): ";
+                // After deploying all reinforcements, can use cards or advance
+                std::cout << "Enter order type:\n";
+                std::cout << "  'advance' - Move/attack with armies\n";
+                std::cout << "  'card' - Play a card from your hand\n";
+                std::cout << "Order type: ";
                 std::cin >> kind;
+                
+                // If player wants to play a card, show their hand and let them choose
+                if (kind == "card") {
+                    if (!p->hand() || p->hand()->getCards().empty()) {
+                        std::cout << "You have no cards to play!\n";
+                        continue;
+                    }
+                    
+                    std::cout << "\nYour cards:\n";
+                    std::vector<Card*> handCards = p->hand()->getCards();
+                    for (size_t i = 0; i < handCards.size(); ++i) {
+                        std::cout << "  [" << i << "] " << handCards[i]->getType() << "\n";
+                    }
+                    
+                    std::cout << "Select card index to play: ";
+                    size_t cardIdx;
+                    std::cin >> cardIdx;
+                    
+                    if (cardIdx >= handCards.size()) {
+                        std::cout << "Invalid card index.\n";
+                        continue;
+                    }
+                    
+                    // Set kind to the card type
+                    kind = handCards[cardIdx]->getType();
+                    std::cout << "Playing " << kind << " card!\n";
+                    
+                    // Remove card from hand after selecting it
+                    // (will be returned to deck after use in issueOrder)
+                }
             }
 
-            Order* issued = p->issueOrder(kind);
+            Order* issued = p->issueOrder(kind, deck);
             if (issued) {
                 std::cout << "Issued a \"" << kind << "\" order.\n";
                 anyIssuedThisRound = true;

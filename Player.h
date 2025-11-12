@@ -6,6 +6,8 @@ class Territory;
 class Hand;
 class OrdersList;
 class Order;
+class Deck;
+class Card;
 
 class Player {
 private:
@@ -43,7 +45,7 @@ public:
     void removeTerritory(Territory* t);
 
 
-    Order* issueOrder(const std::string& kind);
+    Order* issueOrder(const std::string& kind, class Deck* deck = nullptr);
 
     // Printing
     friend std::ostream& operator<<(std::ostream& os, const Player& p);

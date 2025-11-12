@@ -147,7 +147,7 @@ std::vector<Territory*> Player::toAttack() const {
 }
 
 // changed version
-Order* Player::issueOrder(const std::string& kind) {
+Order* Player::issueOrder(const std::string& kind, Deck* deck) {
     if (!orders_) {
         orders_ = new OrdersList();
     }
@@ -343,6 +343,52 @@ Order* Player::issueOrder(const std::string& kind) {
         std::cout << created->getAction() << "\n";
         
         return created;
+    }
+    
+    // Handle special card-based orders
+    if (kind == "bomb" || kind == "blockade" || kind == "negotiate") {
+        // Check if player has the card
+        if (!hand_) {
+            std::cout << "You don't have any cards!\n";
+            return nullptr;
+        }
+        
+        bool hasCard = false;
+        for (Card* c : hand_->getCards()) {
+            if (c->getType() == kind) {
+                hasCard = true;
+                break;
+            }
+        }
+        
+        if (!hasCard) {
+            std::cout << "You don't have a " << kind << " card!\n";
+            return nullptr;
+        }
+        
+        // Find and remove the card from hand
+        Card* usedCard = nullptr;
+        for (Card* c : hand_->getCards()) {
+            if (c->getType() == kind) {
+                usedCard = c;
+                break;
+            }
+        }
+        
+        if (usedCard) {
+            hand_->removeCard(usedCard);
+            std::cout << "Used " << kind << " card from hand.\n";
+            
+            // Return card to deck
+            if (deck) {
+                deck->addCard(usedCard);
+                std::cout << "Card returned to deck.\n";
+            }
+        }
+        
+        std::cout << "Card-based orders (bomb, blockade, negotiate) are not fully implemented yet.\n";
+        std::cout << "For now, only 'deploy' and 'advance' orders work.\n";
+        return nullptr;
     }
     
     Order* created = nullptr;
