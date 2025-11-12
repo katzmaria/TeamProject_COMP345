@@ -18,7 +18,7 @@ bool TerritoryFlag = false;
 static std::unordered_map<std::string, Territory*> gTerrByName; 
 static std::unordered_map<std::string, int> gContinentIdByName;
 
-// this is the map constructor
+// map constructor
 Map::Map() {}
 
 bool MapLoader::load(const std::string& path, Map*& outMap, std::ostream& diag) {
@@ -94,11 +94,12 @@ void MapLoader::addContinentFromLine(Map* m, const std::string& line) {
     }
     std::cout << "adding continent ----> " << continentName << " \n";
     int id = (*m).addContinent(continentName);
-    gContinentIdByName[continentName] = id; // adding the continent name to the unordered map 
-}
+    // adding the continent name to the unordered map 
+    gContinentIdByName[continentName] = id; }
 
 void MapLoader::addTerritoryFromeLine(Map* m, const std::string& line) {
-    int splitter = 0;                     // 0=name, 1=x, 2=y, 3=continent, >=4 neighbors
+    int splitter = 0;    
+    // 0=name, 1=x, 2=y, 3=continent, >=4 neighbors                 
     std::string territoryName;
     std::string Xcoord;
     std::string Ycoord;
@@ -173,7 +174,8 @@ int Map::addContinent(const std::string& name, int bonus) {
 Territory* Map::addTerritory(const std::string& name, int continentId, int x, int y,
     const std::vector<std::string>& neighborsIn) {
     int id = static_cast<int>(territories.size());
-    Territory* t = new Territory(id, name, x, y, neighborsIn); // ctor fills neighborsNames
+    // ctor fills neighborsNames
+    Territory* t = new Territory(id, name, x, y, neighborsIn); 
     t->continentID = continentId;
     territories.push_back(t);
 
@@ -182,7 +184,7 @@ Territory* Map::addTerritory(const std::string& name, int continentId, int x, in
     return t;
 }
 
-// --- define Territory::addNeighbor (as declared in header) ---
+// define Territory::addNeighbor (as declared in header) 
 void Territory::addNeighbor(Territory* t) {
     if (!t || t == this) return;
     if (std::find(neighbors.begin(), neighbors.end(), t) == neighbors.end())
@@ -216,7 +218,7 @@ Map::Map(const Map& other) {
     territories.reserve(other.territories.size());
     for (const Territory* ot : other.territories) {
         Territory* nt = new Territory(*ot);  // copies id, name, coords, continentID, neighborsNames
-        nt->neighbors.clear();               // don�t point to other's objects
+        nt->neighbors.clear();               // do not point to other's objects
         territories.push_back(nt);
     }
 }
