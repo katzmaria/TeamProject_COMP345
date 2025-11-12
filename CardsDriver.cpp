@@ -3,7 +3,7 @@
 #include <ctime>   
 
 
-// I created this just to check if my cards are working
+//testing cards function
 void testCards() {
     std::cout << "=== Testing Cards ===" << std::endl;
 
@@ -17,24 +17,25 @@ void testCards() {
 
     std::cout << deck << std::endl;
 
-    // Create hand
+    // Creating the hand
     Hand hand;
 
-    // Draw cards into hand
+   
     for (int i = 0; i < 3; i++) {
         deck.draw(&hand);
     }
 
     std::cout << hand << std::endl;
 
-    // Play all cards in hand
+    // Play every card in the hand .
     for (auto card : hand.getCards()) {
         card->play();
     }
 
-    std::cout << "=== End Test ===" << std::endl;
+    std::cout << "=== End Test ===  " << std::endl;
 }
 
 void cardsDriver() {
+    
     testCards();
 }

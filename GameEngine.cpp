@@ -20,10 +20,20 @@
 //creating the deck with cards
 void seedDeck(Deck* deck) {
     
-    for (int i = 0; i < 10; ++i) deck->addCard(new Card("Airlift"));
-    for (int i = 0; i < 10; ++i) deck->addCard(new Card("Bomb"));
-    for (int i = 0; i < 10; ++i) deck->addCard(new Card("Blockade"));
-    for (int i = 0; i < 10; ++i) deck->addCard(new Card("Negotiate")); // Diplomacy
+    for (int i = 0; i < 10; ++i) {
+        deck->addCard(new Card("Airlift"));
+    }
+    for (int i = 0; i < 10; ++i){
+        deck->addCard(new Card("Bomb"));
+    }
+    for (int i = 0; i < 10; ++i){
+        deck->addCard(new Card("Blockade"));
+
+    } 
+    for (int i = 0; i < 10; ++i){
+
+        deck->addCard(new Card("Negotiate")); 
+    }  
 }
 
 GameEngine::GameEngine() {

@@ -36,11 +36,11 @@ void testOrderExecution() {
     std::cout << "TESTING ORDER EXECUTION\n";
     std::cout << "========================================\n";
 
-    // Create players
+    
     Player* player1 = new Player("Player1");
     Player* player2 = new Player("Player2");
     
-    // Create territories with proper constructor
+    
     std::vector<std::string> emptyNeighbors;
     Territory* t1 = new Territory(1, "Territory1", 0, 0, emptyNeighbors);
     Territory* t2 = new Territory(2, "Territory2", 0, 0, emptyNeighbors);
@@ -48,7 +48,7 @@ void testOrderExecution() {
     Territory* t4 = new Territory(4, "Territory4", 0, 0, emptyNeighbors);
     Territory* t5 = new Territory(5, "Territory5", 0, 0, emptyNeighbors);
     
-    // Set up adjacencies
+    
     t1->addNeighbor(t2);
     t2->addNeighbor(t1);
     t2->addNeighbor(t3);
@@ -58,7 +58,7 @@ void testOrderExecution() {
     t4->addNeighbor(t5);
     t5->addNeighbor(t4);
     
-    // Assign territories to players
+    
     t1->setOwner(player1);
     player1->addTerritory(t1);
     t1->armies = 10;
@@ -79,7 +79,7 @@ void testOrderExecution() {
     player2->addTerritory(t5);
     t5->armies = 5;
     
-    // Give players reinforcements
+    
     player1->setReinforcementPool(10);
     player2->setReinforcementPool(10);
     
@@ -87,7 +87,7 @@ void testOrderExecution() {
     std::cout << "Player1 owns: Territory1 (10 armies), Territory2 (15 armies)\n";
     std::cout << "Player2 owns: Territory3 (8 armies), Territory4 (12 armies), Territory5 (5 armies)\n";
 
-    // TEST 1: Deploy Order Validation
+    
     std::cout << "\n========================================\n";
     std::cout << "TEST 1: Deploy Order Validation\n";
     std::cout << "========================================\n";
@@ -105,7 +105,7 @@ void testOrderExecution() {
         std::cout << "[PASS] Deploy correctly rejected (not owned)\n";
     }
     
-    // TEST 2: Advance - Movement
+   
     std::cout << "\n========================================\n";
     std::cout << "TEST 2: Advance Order - Movement\n";
     std::cout << "========================================\n";
@@ -117,7 +117,7 @@ void testOrderExecution() {
         std::cout << "Result: " << advance1->getAction() << "\n";
     }
 
-    // TEST 3: Advance - Conquest & Ownership Transfer
+   
     std::cout << "\n========================================\n";
     std::cout << "TEST 3: Territory Conquest\n";
     std::cout << "========================================\n";
@@ -132,7 +132,7 @@ void testOrderExecution() {
         }
     }
 
-    // TEST 4: Card Reward
+    
     std::cout << "\n========================================\n";
     std::cout << "TEST 4: Card Reward for Conquest\n";
     std::cout << "========================================\n";
@@ -146,7 +146,7 @@ void testOrderExecution() {
         std::cout << "[PASS] Player draws card for conquest\n";
     }
 
-    // TEST 5: Bomb Order
+   
     std::cout << "\n========================================\n";
     std::cout << "TEST 5: Bomb Order\n";
     std::cout << "========================================\n";
@@ -166,7 +166,7 @@ void testOrderExecution() {
         std::cout << "[PASS] Bomb correctly rejected (own territory)\n";
     }
 
-    // TEST 6: Airlift Order
+    
     std::cout << "\n========================================\n";
     std::cout << "TEST 6: Airlift Order\n";
     std::cout << "========================================\n";
@@ -182,7 +182,7 @@ void testOrderExecution() {
         std::cout << "[PASS] Airlift correctly rejected (not owned)\n";
     }
 
-    // TEST 7: Negotiate Order
+   
     std::cout << "\n========================================\n";
     std::cout << "TEST 7: Negotiate Order\n";
     std::cout << "========================================\n";
@@ -201,7 +201,7 @@ void testOrderExecution() {
         }
     }
 
-    // TEST 8: Blockade Order
+   
     std::cout << "\n========================================\n";
     std::cout << "TEST 8: Blockade Order\n";
     std::cout << "========================================\n";
@@ -219,12 +219,12 @@ void testOrderExecution() {
         }
     }
 
-    // Summary
+    
     std::cout << "\n========================================\n";
     std::cout << "ALL TESTS COMPLETED\n";
     std::cout << "========================================\n";
 
-    // Cleanup
+    
     delete deploy1; delete deploy2;
     delete advance1; delete advance2; delete advance3;
     delete bomb1; delete bomb2;

@@ -35,7 +35,7 @@ public:
     friend std::ostream& operator<<(std::ostream& out, const Order& order);
 };
 
-// Deploy Order
+// Deploy Order//
 class Deploy : public Order {
 private:
     Player* owner_;
@@ -82,17 +82,17 @@ class Blockade : public Order {
 private:
     Player* owner_;
     Territory* target_;
-    static Player* neutralPlayer_; // Static Neutral player
+    static Player* neutralPlayer_; 
 
 public:
     Blockade();
     Blockade(Player* owner, Territory* target);
     bool validate() override;
     void execute() override;
-    static Player* getNeutralPlayer(); // Get or create Neutral player
+    static Player* getNeutralPlayer(); 
 };
 
-// Airlift Order
+// Airlift Order //
 class Airlift : public Order {
 private:
     Player* owner_;
