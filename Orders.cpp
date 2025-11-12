@@ -257,8 +257,16 @@ void Advance::execute() {
                   ". Target now has " + std::to_string(target_->armies) + " armies.");
         setExecuted(true);
     } else {
-        // Attack simulation
+        // Check for diplomatic relations before attacking
         Player* defender = target_->owner;
+        if (defender && owner_->hasDiplomaticRelation(defender)) {
+            setAction("Invalid: Cannot attack " + target_->name + 
+                      " due to diplomatic relations with " + defender->name());
+            setExecuted(false);
+            return;
+        }
+        
+        // Attack simulation
         std::string defenderName = defender ? defender->name() : "Neutral";
         int attackingArmies = armies_;
         int defendingArmies = target_->armies;
@@ -470,7 +478,13 @@ void Negotiate::execute() {
         return;
     }
 
-    setAction("Negotiated with " + targetPlayer_->name());
+    // Establish diplomatic relations (bidirectional)
+    owner_->addDiplomaticRelation(targetPlayer_);
+    targetPlayer_->addDiplomaticRelation(owner_);
+    
+    setAction("Negotiated with " + targetPlayer_->name() + 
+              ". No attacks can be made between " + owner_->name() + 
+              " and " + targetPlayer_->name() + " for the remainder of this turn.");
     setExecuted(true);
 }
 

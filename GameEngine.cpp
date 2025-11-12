@@ -476,6 +476,9 @@ void GameEngine::reinforcementPhase() {
 
     for (Player* p : players) {
         if (!p) continue;
+        
+        // Clear diplomatic relations at start of turn
+        p->clearDiplomaticRelations();
 
         const std::vector<Territory*>* ownedPtr = p->territories();
         if (!ownedPtr) {
@@ -641,7 +644,7 @@ void GameEngine::issueOrdersPhase() {
                 }
             }
 
-            Order* issued = p->issueOrder(kind, deck);
+            Order* issued = p->issueOrder(kind, deck, &players);
             if (issued) {
                 std::cout << "Issued a \"" << kind << "\" order.\n";
                 anyIssuedThisRound = true;

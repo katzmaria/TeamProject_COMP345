@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <iosfwd>
+#include <set>
 class Territory;
 class Hand;
 class OrdersList;
@@ -18,6 +19,7 @@ private:
     int*                        reinforcementPool_;
     int*                        committedReinforcements_; // track armies committed during issue phase
     bool*                       conqueredThisTurn_; // track if player conquered a territory this turn
+    std::set<Player*>*          diplomaticRelations_; // players you cannot attack this turn
 
 public:
 
@@ -45,7 +47,7 @@ public:
     void removeTerritory(Territory* t);
 
 
-    Order* issueOrder(const std::string& kind, class Deck* deck = nullptr);
+    Order* issueOrder(const std::string& kind, class Deck* deck = nullptr, const std::vector<Player*>* allPlayers = nullptr);
 
     // Printing
     friend std::ostream& operator<<(std::ostream& os, const Player& p);
@@ -62,5 +64,10 @@ public:
     
     bool hasConqueredThisTurn() const;
     void setConqueredThisTurn(bool value);
+    
+    // Diplomatic relations (for negotiate orders)
+    void addDiplomaticRelation(Player* player);
+    bool hasDiplomaticRelation(Player* player) const;
+    void clearDiplomaticRelations(); // call at start of turn
 
 };

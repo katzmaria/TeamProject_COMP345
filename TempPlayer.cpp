@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iostream>
 #include <map>
+#include <set>
 #include "Orders.h" 
 #include "Map.h"   
 #include "Cards.h"   
@@ -14,7 +15,8 @@ Player::Player()
       orders_(nullptr),
       reinforcementPool_(new int(0)),
       committedReinforcements_(new int(0)),
-      conqueredThisTurn_(new bool(false)) {}
+      conqueredThisTurn_(new bool(false)),
+      diplomaticRelations_(new std::set<Player*>()) {}
 //param constructor
 Player::Player(const std::string& name)
     : name_(new std::string(name)),
@@ -23,7 +25,8 @@ Player::Player(const std::string& name)
       orders_(nullptr),
       reinforcementPool_(new int(0)),
       committedReinforcements_(new int(0)),
-      conqueredThisTurn_(new bool(false)) {}
+      conqueredThisTurn_(new bool(false)),
+      diplomaticRelations_(new std::set<Player*>()) {}
 
 // copy constructor (deep copy for Hand/OrdersList; shallow for Territory* list)
 Player::Player(const Player& other)
@@ -33,7 +36,8 @@ Player::Player(const Player& other)
       orders_(other.orders_ ? new OrdersList(*other.orders_) : nullptr),
       reinforcementPool_(new int(*other.reinforcementPool_)),
       committedReinforcements_(new int(*other.committedReinforcements_)),
-      conqueredThisTurn_(new bool(*other.conqueredThisTurn_)) {}
+      conqueredThisTurn_(new bool(*other.conqueredThisTurn_)),
+      diplomaticRelations_(new std::set<Player*>(*other.diplomaticRelations_)) {}
 
 
 // copy assignment
@@ -52,6 +56,7 @@ Player& Player::operator=(const Player& other) {
     *reinforcementPool_ = *other.reinforcementPool_;
     *committedReinforcements_ = *other.committedReinforcements_;
     *conqueredThisTurn_ = *other.conqueredThisTurn_;
+    *diplomaticRelations_ = *other.diplomaticRelations_;
     return *this;
 }
 
@@ -64,6 +69,7 @@ Player::~Player() {
     delete reinforcementPool_;
     delete committedReinforcements_;
     delete conqueredThisTurn_;
+    delete diplomaticRelations_;
 }
 
 // ----- getters/setters -----
@@ -148,7 +154,7 @@ std::vector<Territory*> Player::toAttack() const {
 }
 
 // changed version
-Order* Player::issueOrder(const std::string& kind, Deck* deck) {
+Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector<Player*>* allPlayers) {
     if (!orders_) {
         orders_ = new OrdersList();
     }
@@ -556,7 +562,7 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck) {
     }
     
     if (kind == "negotiate") {
-        // Check if player has the card
+        // Check if player has the negotiate card
         if (!hand_) {
             std::cout << "You don't have any cards!\n";
             return nullptr;
@@ -564,21 +570,53 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck) {
         
         bool hasCard = false;
         for (Card* c : hand_->getCards()) {
-            if (c->getType() == kind) {
+            if (c->getType() == "negotiate") {
                 hasCard = true;
                 break;
             }
         }
         
         if (!hasCard) {
-            std::cout << "You don't have a " << kind << " card!\n";
+            std::cout << "You don't have a negotiate card!\n";
             return nullptr;
         }
         
-        // Find and remove the card from hand
+        if (!allPlayers || allPlayers->size() < 2) {
+            std::cout << "Not enough players to negotiate with!\n";
+            return nullptr;
+        }
+
+        std::cout << "\nNegotiate order for " << *name_ << "\n";
+        std::cout << "Select target PLAYER to negotiate with:\n";
+        
+        std::vector<Player*> otherPlayers;
+        for (Player* p : *allPlayers) {
+            if (p != this) {
+                otherPlayers.push_back(p);
+            }
+        }
+        
+        if (otherPlayers.empty()) {
+            std::cout << "No other players to negotiate with!\n";
+            return nullptr;
+        }
+        
+        for (std::size_t i = 0; i < otherPlayers.size(); ++i) {
+            std::cout << i << ") " << otherPlayers[i]->name() << "\n";
+        }
+
+        std::size_t playerIdx;
+        std::cin >> playerIdx;
+        if (playerIdx >= otherPlayers.size()) {
+            std::cout << "Invalid player index.\n";
+            return nullptr;
+        }
+        Player* targetPlayer = otherPlayers[playerIdx];
+
+        // Find and remove the negotiate card from hand
         Card* usedCard = nullptr;
         for (Card* c : hand_->getCards()) {
-            if (c->getType() == kind) {
+            if (c->getType() == "negotiate") {
                 usedCard = c;
                 break;
             }
@@ -586,7 +624,7 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck) {
         
         if (usedCard) {
             hand_->removeCard(usedCard);
-            std::cout << "Used " << kind << " card from hand.\n";
+            std::cout << "Used negotiate card from hand.\n";
             
             // Return card to deck
             if (deck) {
@@ -594,19 +632,15 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck) {
                 std::cout << "Card returned to deck.\n";
             }
         }
-        
-        std::cout << "Card-based orders (bomb, blockade, negotiate) are not fully implemented yet.\n";
-        std::cout << "For now, only 'deploy' and 'advance' orders work.\n";
-        return nullptr;
-    }
-    
-    Order* created = nullptr;
-    if      (kind == "bomb")      created = new Bomb();
-    else if (kind == "blockade")  created = new Blockade();
-    else if (kind == "negotiate") created = new Negotiate();
 
-    if (created) {
+        Order* created = new Negotiate(this, targetPlayer);
         orders_->add(created);
+        
+        // Execute immediately
+        std::cout << "\n--- Executing Negotiate Order ---\n";
+        created->execute();
+        std::cout << created->getAction() << "\n";
+        
         return created;
     }
 
@@ -646,5 +680,22 @@ bool Player::hasConqueredThisTurn() const {
 // Set conquered flag
 void Player::setConqueredThisTurn(bool value) {
     *conqueredThisTurn_ = value;
+}
+
+// Add diplomatic relation (for negotiate orders)
+void Player::addDiplomaticRelation(Player* player) {
+    if (player && player != this) {
+        diplomaticRelations_->insert(player);
+    }
+}
+
+// Check if there's a diplomatic relation with a player
+bool Player::hasDiplomaticRelation(Player* player) const {
+    return diplomaticRelations_->find(player) != diplomaticRelations_->end();
+}
+
+// Clear diplomatic relations (call at start of turn)
+void Player::clearDiplomaticRelations() {
+    diplomaticRelations_->clear();
 }
 
