@@ -72,7 +72,7 @@ Player::~Player() {
     delete diplomaticRelations_;
 }
 
-// ----- getters/setters -----
+// getters/setters 
 const std::string& Player::name() const { 
     return *name_; 
 }
@@ -111,10 +111,10 @@ void Player::setReinforcementPool(int value) {
 
 void Player::addReinforcements(int delta) {
     *reinforcementPool_ += delta;
-    if (*reinforcementPool_ < 0) *reinforcementPool_ = 0;  // just incase
+    if (*reinforcementPool_ < 0) *reinforcementPool_ = 0;  // just incase negative val
 }
 
-// ----- territory management -----
+// territory management
 void Player::addTerritory(Territory* t) {
     if (!t) return;
     auto& vec = *territories_;
@@ -136,7 +136,7 @@ const std::vector<Territory*>* Player::territories() const {
     return territories_;
 }
 
-// ----- battle planning stubs (placeholder logic) -----
+// battle planning stubs (placeholder logic)
 std::vector<Territory*> Player::toDefend() const {
     std::vector<Territory*> result;
     const auto& own = *territories_;
@@ -160,18 +160,21 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
     }
 
     if (kind == "deploy") {
+        // check reinforcements 
         int available = getAvailableReinforcements();
         if (available <= 0) {
             std::cout << *name_ << " has no available reinforcement armies.\n";
             return nullptr;
         }
 
+        // check territories of player 
         const auto* terrs = territories();
         if (!terrs || terrs->empty()) {
             std::cout << *name_ << " has no territories to deploy to.\n";
             return nullptr;
         }
 
+        //prompt user input
         std::cout << "\nDeploy order for " << *name_ << "\n";
         std::cout << "Available reinforcements: " << available << "\n";
         std::cout << "Select a territory index:\n";
@@ -197,6 +200,7 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
 
         Territory* target = terrs->at(idx);
 
+        //create and add order to list 
         Order* created = new Deploy(this, target, amount);
         orders_->add(created);
         
@@ -215,12 +219,13 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
     }
     
     if (kind == "advance") {
+        //checkterritories of player
         const auto* terrs = territories();
         if (!terrs || terrs->empty()) {
             std::cout << *name_ << " has no territories.\n";
             return nullptr;
         }
-
+        //selecte source and target 
         std::cout << "\n=== Advance order for " << *name_ << " ===\n";
         std::cout << "Select SOURCE territory (must be one you own):\n";
         for (std::size_t i = 0; i < terrs->size(); ++i) {
@@ -242,6 +247,8 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
             return nullptr;
         }
 
+
+// select the target territory
         std::cout << "\nSelect TARGET territory (must be adjacent to " << source->name << "):\n";
         std::cout << "Adjacent territories:\n";
         for (std::size_t i = 0; i < source->neighbors.size(); ++i) {
@@ -250,7 +257,7 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
             if (n->owner) {
                 ownerName = n->owner->name();
             }
-            
+            // show if its yours or enemies 
             std::string relation = (n->owner == this) ? "[YOUR TERRITORY]" : "[ENEMY]";
             
             std::cout << "  [" << i << "] " << n->name 
@@ -268,6 +275,7 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
         }
         Territory* target = source->neighbors[tgtIdx];
 
+        // select amount to attack
         int amount;
         std::cout << "\nHow many armies to advance? (1.." << source->armies << "): ";
         std::cin >> amount;
@@ -314,13 +322,13 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
             std::cout << "You don't have an airlift card!\n";
             return nullptr;
         }
-        
+        //ensure player has at leats 2 territories
         const auto* terrs = territories();
         if (!terrs || terrs->size() < 2) {
             std::cout << *name_ << " needs at least 2 territories for airlift.\n";
             return nullptr;
         }
-
+// prompt for source target and amount
         std::cout << "\nAirlift order for " << *name_ << "\n";
         std::cout << "Select SOURCE territory index:\n";
         for (std::size_t i = 0; i < terrs->size(); ++i) {
@@ -435,19 +443,19 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
                 }
             }
         }
-        
+        // if no adjacent enemies 
         if (adjacentEnemies.empty()) {
             std::cout << "No enemy territories adjacent to your territories!\n";
             return nullptr;
         }
-        
+        // show adjacent enemy territories
         for (std::size_t i = 0; i < adjacentEnemies.size(); ++i) {
             std::string ownerName = adjacentEnemies[i]->owner ? adjacentEnemies[i]->owner->name() : "Neutral";
             std::cout << i << ") " << adjacentEnemies[i]->name 
                       << " (armies: " << adjacentEnemies[i]->armies 
                       << ", owner: " << ownerName << ")\n";
         }
-
+        // select targets
         std::size_t tgtIdx;
         std::cin >> tgtIdx;
         if (tgtIdx >= adjacentEnemies.size()) {
@@ -475,7 +483,7 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
                 std::cout << "Card returned to deck.\n";
             }
         }
-
+// create and add order 
         Order* created = new Bomb(this, target);
         orders_->add(created);
         
@@ -513,7 +521,7 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
             std::cout << *name_ << " has no territories.\n";
             return nullptr;
         }
-
+        //  slect target tterrritory 
         std::cout << "\nBlockade order for " << *name_ << "\n";
         std::cout << "Select TARGET territory to blockade (must be one you own):\n";
         
@@ -538,7 +546,7 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
                 break;
             }
         }
-        
+        //if used remove card and return to deck
         if (usedCard) {
             hand_->removeCard(usedCard);
             std::cout << "Used blockade card from hand.\n";
@@ -550,6 +558,7 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
             }
         }
 
+        
         Order* created = new Blockade(this, target);
         orders_->add(created);
         
@@ -586,6 +595,7 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
             return nullptr;
         }
 
+        //select target player 
         std::cout << "\nNegotiate order for " << *name_ << "\n";
         std::cout << "Select target PLAYER to negotiate with:\n";
         
@@ -600,7 +610,7 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
             std::cout << "No other players to negotiate with!\n";
             return nullptr;
         }
-        
+        // show other players 
         for (std::size_t i = 0; i < otherPlayers.size(); ++i) {
             std::cout << i << ") " << otherPlayers[i]->name() << "\n";
         }
@@ -657,7 +667,7 @@ std::ostream& operator<<(std::ostream& os, const Player& p) {
     return os;
 }
 
-// Get available reinforcements (pool minus what's been committed this turn)
+// Get available reinforcements pool (minus what's been committed this turn)
 int Player::getAvailableReinforcements() const {
     return *reinforcementPool_ - *committedReinforcements_;
 }

@@ -13,7 +13,7 @@ class Card;
 class Player {
 private:
     std::string*                name_;
-    std::vector<Territory*>*    territories_; // vector of territories (not owned by Player)
+    std::vector<Territory*>*    territories_; // vector of territories 
     Hand*                       hand_;        // owned by Player
     OrdersList*                 orders_;      // owned by Player
     int*                        reinforcementPool_;
@@ -68,6 +68,7 @@ public:
     // Diplomatic relations (for negotiate orders)
     void addDiplomaticRelation(Player* player);
     bool hasDiplomaticRelation(Player* player) const;
-    void clearDiplomaticRelations(); // call at start of turn
+    // call at start of turn
+    void clearDiplomaticRelations(); 
 
 };
