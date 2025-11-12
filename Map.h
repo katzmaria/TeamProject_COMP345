@@ -4,7 +4,7 @@
 #include <iosfwd>
 class Player;
 
-// ---------- Territory ----------
+// Territory 
 struct Territory {
     int id = -1;
     int continentID = -1;
@@ -23,7 +23,7 @@ struct Territory {
     void setOwner(Player* p) { owner = p; }
 };
 
-// ---------- Continent ----------
+// Continent
 struct Continent {
     int continentID = -1;
     std::string continentName;
@@ -36,7 +36,7 @@ struct Continent {
     friend std::ostream& operator<<(std::ostream& os, const Continent& c);
 };
 
-// ---------- Map ----------
+//  Map
 class Map {
 public:
     Map();
@@ -65,7 +65,7 @@ private:
     bool continentConnected(int continentId) const;
 };
 
-// ---------- MapLoader ----------
+// MapLoader 
 class MapLoader {
 public:
     bool load(const std::string& filepath, Map*& outMap, std::ostream& diag);
