@@ -5,7 +5,7 @@
 #include <random>
 #include <ctime>
 
-// -------------------- Card --------------------
+// -------------------- Card Area --------------------
 Card::Card(const std::string& type) {
     this->type = new std::string(type);
 }
@@ -32,11 +32,7 @@ std::string Card::getType() const {
 
 Order* Card::play() {
     std::cout << "Playing card: " << *type << std::endl;
-    
-    // TODO: integrate with Orders system in Part 3
-
-    
-    return nullptr;
+     return nullptr;
 }
 
 std::ostream& operator<<(std::ostream& out, const Card& card) {
@@ -44,7 +40,7 @@ std::ostream& operator<<(std::ostream& out, const Card& card) {
     return out;
 }
 
-// -------------------- Hand --------------------
+// -------------------- Hand Area--------------------
 Hand::Hand() {
     cards = new std::vector<Card*>();
 }
@@ -95,7 +91,7 @@ std::ostream& operator<<(std::ostream& out, const Hand& hand) {
     return out;
 }
 
-// -------------------- Deck --------------------
+// -------------------- Deck Area --------------------
 Deck::Deck() {
     cards = new std::vector<Card*>();
     static bool seeded = false;
@@ -136,7 +132,7 @@ void Deck::addCard(Card* card) {
 
 Card* Deck::draw(Hand* hand) {
     if (cards->empty()) return nullptr;
-
+    // to create randomness in drawing the cards 
     static std::random_device rd;
     static std::mt19937 gen(rd());
     std::uniform_int_distribution<> dist(0, cards->size() - 1);
@@ -147,7 +143,7 @@ Card* Deck::draw(Hand* hand) {
     // give ownership to hand
     hand->addCard(drawn);
 
-    // remove from deck
+    // remove the card from the deck
     cards->erase(cards->begin() + index);
 
     std::cout << "Drew card: " << *drawn << std::endl;

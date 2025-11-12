@@ -5,17 +5,17 @@
 #include <vector>
 #include <string>
 
-class Order; // forward declare (from Part 3)
+class Order; 
 
 class Card {
 public:
     Card(const std::string& type);
-    Card(const Card& other);                 // copy constructor
-    Card& operator=(const Card& other);      // assignment operator
+    Card(const Card& other);                 
+    Card& operator=(const Card& other);      
     ~Card();
 
     std::string getType() const;
-    Order* play();                           // simulate play: create order + return card to deck
+    Order* play();                           
 
     friend std::ostream& operator<<(std::ostream& out, const Card& card);
 
@@ -48,14 +48,15 @@ public:
     ~Deck();
 
     void addCard(Card* card);
-    Card* draw(Hand* hand);  // draw random card → put in hand
+    Card* draw(Hand* hand);  // draw random card and put it in the hand of the player
 
     friend std::ostream& operator<<(std::ostream& out, const Deck& deck);
 
 private:
-    std::vector<Card*>* cards;  // collection of cards in deck
+    std::vector<Card*>* cards;  // collection of cards in the deck
 };
 
-void testCards();  // driver free function
+// free function for main 
+void testCards();  
 
 #endif

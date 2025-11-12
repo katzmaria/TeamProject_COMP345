@@ -1,9 +1,9 @@
 #include "Orders.h"
 #include "Map.h"
-#include "Player.h"  // Add this line
-#include "Cards.h"   // Add this line
-#include <cstdlib>   // for rand()
-#include <ctime>     // for time()
+#include "Player.h"  // Adding this line.
+#include "Cards.h"   // Adding  this line
+#include <cstdlib>    
+#include <ctime>     
 // Order Class
 Order::Order(const std::string& n) {
     orderName = n;
@@ -34,7 +34,7 @@ void Order::setExecuted(bool e) {
      executed = e; 
     }
 
-/* Determing whether the order is valid or not. */
+/* Checking whether the order is valid or not. */
 void Order::execute() {
     if (validate()) {
         executed = true;
@@ -48,11 +48,7 @@ void Order::execute() {
     return false; 
 }
 
-/* 
 
-Function called when using cout << order.
-
-*/
 std::ostream& operator<<(std::ostream& out, const Order& order) {
     out << order.orderName;
     if (order.executed){ 
@@ -70,10 +66,15 @@ Deploy::Deploy(Player* owner, Territory* target, int armies)
     : Order("Deploy"), owner_(owner), target_(target), armies_(armies) {}
 
 bool Deploy::validate() {
-    if (!owner_) return false;
+    if (!owner_) {
+        
+        return false;
+    
+    
+    }
     if (!target_) return false;
     
-    // Check player owns the territory
+    
     const auto* terrs = owner_->territories();
     if (!terrs) return false;
     
@@ -87,8 +88,10 @@ bool Deploy::validate() {
     
     if (!ownsTerritory) return false;
     
-    // Check player has enough reinforcements at execution time
-    if (owner_->getReinforcementPool() < armies_) return false;
+    
+    if (owner_->getReinforcementPool() < armies_) {
+        return false;
+    }
     
     return true;
 }
@@ -123,13 +126,13 @@ bool Bomb::validate() {
         return false;
     }
     
-    // Check target is NOT owned by player (using owner field)
+    
     if (target_->owner == owner_) {
         setAction("Invalid: Cannot bomb own territory");
         return false;
     }
     
-    // Check if target is adjacent to at least one territory owned by the player
+    
     const auto* ownerTerrs = owner_->territories();
     if (!ownerTerrs || ownerTerrs->empty()) {
         setAction("Invalid: Player has no territories");
@@ -138,7 +141,7 @@ bool Bomb::validate() {
     
     bool isAdjacent = false;
     for (Territory* ownedTerritory : *ownerTerrs) {
-        // Check if target is in the neighbors of this owned territory
+       
         for (Territory* neighbor : ownedTerritory->neighbors) {
             if (neighbor == target_) {
                 isAdjacent = true;
@@ -163,7 +166,7 @@ void Bomb::execute() {
         return;
     }
 
-    // Remove half of the army units from the target territory
+    
     int originalArmies = target_->armies;
     int armiesRemoved = originalArmies / 2;
     target_->armies -= armiesRemoved;
@@ -174,7 +177,7 @@ void Bomb::execute() {
     setExecuted(true);
 }
 
-// ADVANCE CLASS
+// ADVANCE CLASS Location
 Advance::Advance() : Order("Advance"), owner_(nullptr), source_(nullptr), target_(nullptr), armies_(0) {}
 
 Advance::Advance(Player* owner, Territory* source, Territory* target, int armies)
@@ -186,7 +189,7 @@ bool Advance::validate() {
         return false;
     }
     
-    // Check player owns source territory
+    
     const auto* terrs = owner_->territories();
     if (!terrs) {
         setAction("Invalid: player has no territories");
@@ -206,13 +209,13 @@ bool Advance::validate() {
         return false;
     }
     
-    // Check source has enough armies
+    // Check source 
     if (source_->armies < armies_) {
         setAction("Invalid: Source territory does not have enough armies");
         return false;
     }
     
-    // Check target is adjacent to source
+    // Check target 
     bool isAdjacent = false;
     for (Territory* neighbor : source_->neighbors) {
         if (neighbor == target_) {
@@ -236,7 +239,7 @@ void Advance::execute() {
         return;
     }
 
-    // Check if target is owned by the same player
+    
     bool targetOwnedByPlayer = false;
     const auto* terrs = owner_->territories();
     if (terrs) {
@@ -249,7 +252,7 @@ void Advance::execute() {
     }
 
     if (targetOwnedByPlayer) {
-        // Simple movement: transfer armies from source to target
+        // transfering armies from source to target
         source_->armies -= armies_;
         target_->armies += armies_;
         setAction("MOVEMENT: Moved " + std::to_string(armies_) + " armies from " + 
@@ -257,7 +260,7 @@ void Advance::execute() {
                   ". Target now has " + std::to_string(target_->armies) + " armies.");
         setExecuted(true);
     } else {
-        // Check for diplomatic relations before attacking
+
         Player* defender = target_->owner;
         if (defender && owner_->hasDiplomaticRelation(defender)) {
             setAction("Invalid: Cannot attack " + target_->name + 
@@ -266,7 +269,7 @@ void Advance::execute() {
             return;
         }
         
-        // Attack simulation
+        
         std::string defenderName = defender ? defender->name() : "Neutral";
         int attackingArmies = armies_;
         int defendingArmies = target_->armies;
@@ -275,54 +278,58 @@ void Advance::execute() {
         std::cout << owner_->name() << " attacks with " << attackingArmies << " armies\n";
         std::cout << defenderName << " defends with " << defendingArmies << " armies\n";
         
-        // Remove armies from source
+        // Removing the armies 
         source_->armies -= armies_;
         
-        // Battle simulation
+       
         int attackerKills = 0;
         int defenderKills = 0;
         
-        // Each attacking army has 60% chance to kill a defender
+      
         for (int i = 0; i < attackingArmies; ++i) {
             if ((rand() % 100) < 60) {  // 60% chance
                 attackerKills++;
             }
         }
         
-        // Each defending army has 70% chance to kill an attacker
+        
         for (int i = 0; i < defendingArmies; ++i) {
             if ((rand() % 100) < 70) {  // 70% chance
                 defenderKills++;
             }
         }
         
-        // Apply casualties
+        
         attackingArmies -= defenderKills;
         defendingArmies -= attackerKills;
         
-        // Ensure non-negative
-        if (attackingArmies < 0) attackingArmies = 0;
-        if (defendingArmies < 0) defendingArmies = 0;
+        
+        if (attackingArmies < 0) {
+            attackingArmies = 0;
+        }
+        if (defendingArmies < 0){
+            defendingArmies = 0;
+        }
         
         std::cout << "Battle results: Attacker killed " << attackerKills << " defenders, "
                   << "Defender killed " << defenderKills << " attackers\n";
         
         if (defendingArmies == 0 && attackingArmies > 0) {
-            // Attacker conquers the territory
+            
             target_->armies = attackingArmies;
             
             std::cout << "*** TERRITORY CONQUERED! ***\n";
             std::cout << owner_->name() << " conquers " << target_->name 
                       << " with " << attackingArmies << " surviving armies!\n";
             
-            // Transfer ownership
+          
             if (defender) {
                 defender->removeTerritory(target_);
             }
             target_->setOwner(owner_);
             owner_->addTerritory(target_);
             
-            // Mark that this player conquered a territory (for card drawing)
+            
             owner_->setConqueredThisTurn(true);
             
             setAction("CONQUEST! Conquered " + target_->name + " with " + 
@@ -331,7 +338,7 @@ void Advance::execute() {
                       "Lost " + std::to_string(defenderKills) + " attackers.");
             setExecuted(true);
         } else {
-            // Attack failed, defenders hold
+            
             target_->armies = defendingArmies;
             std::cout << "Attack FAILED! " << defendingArmies << " defenders remain.\n";
             
@@ -344,8 +351,8 @@ void Advance::execute() {
     }
 }
 
-// BLOCKADE CLASS
-// BLOCKADE CLASS
+
+// BLOCKADE CLASS Location
 Player* Blockade::neutralPlayer_ = nullptr;
 
 Blockade::Blockade() : Order("Blockade"), owner_(nullptr), target_(nullptr) {}
@@ -366,7 +373,7 @@ bool Blockade::validate() {
         return false;
     }
     
-    // Check player owns the territory (using owner field)
+    
     if (target_->owner != owner_) {
         setAction("Invalid: Player does not own target territory");
         return false;
@@ -387,10 +394,10 @@ void Blockade::execute() {
     // Double the army units
     target_->armies *= 2;
     
-    // Remove territory from owner's list
+    
     owner_->removeTerritory(target_);
     
-    // Transfer ownership to Neutral player
+    
     Player* neutral = getNeutralPlayer();
     target_->owner = neutral;
     neutral->addTerritory(target_);
@@ -413,7 +420,7 @@ bool Airlift::validate() {
         return false;
     }
     
-    // Check player owns both territories using the owner field
+    
     if (source_->owner != owner_) {
         setAction("Invalid: Player does not own source territory");
         return false;
@@ -424,7 +431,7 @@ bool Airlift::validate() {
         return false;
     }
     
-    // Check source has enough armies
+    
     if (source_->armies < armies_) {
         setAction("Invalid: Source territory does not have enough armies");
         return false;
@@ -440,7 +447,7 @@ void Airlift::execute() {
         return;
     }
 
-    // Move armies from source to target (no adjacency required)
+   
     source_->armies -= armies_;
     target_->armies += armies_;
     
@@ -460,13 +467,13 @@ Negotiate::Negotiate(Player* owner, Player* targetPlayer)
 bool Negotiate::validate() {
     if (!owner_ || !targetPlayer_) return false;
     
-    // Can't negotiate with yourself
+    
     if (owner_ == targetPlayer_) {
         setAction("Invalid: Cannot negotiate with yourself");
         return false;
     }
     
-    // Check player has negotiate card (implement when Hand::hasCard exists)
+   
     
     return true;
 }
@@ -478,7 +485,7 @@ void Negotiate::execute() {
         return;
     }
 
-    // Establish diplomatic relations (bidirectional)
+    
     owner_->addDiplomaticRelation(targetPlayer_);
     targetPlayer_->addDiplomaticRelation(owner_);
     

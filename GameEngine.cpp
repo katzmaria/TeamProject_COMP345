@@ -14,16 +14,26 @@
 #include <random>
 #include <filesystem>
 
-// ================== basic GameEngine methods ==================
+// ================== GameEngine methods ==================
 
 
 //Just creating the deck with cards
 void seedDeck(Deck* deck) {
     
-    for (int i = 0; i < 10; ++i) deck->addCard(new Card("Airlift"));
-    for (int i = 0; i < 10; ++i) deck->addCard(new Card("Bomb"));
-    for (int i = 0; i < 10; ++i) deck->addCard(new Card("Blockade"));
-    for (int i = 0; i < 10; ++i) deck->addCard(new Card("Negotiate")); // Diplomacy
+    for (int i = 0; i < 10; ++i) {
+        deck->addCard(new Card("Airlift"));
+    }
+    for (int i = 0; i < 10; ++i){
+        deck->addCard(new Card("Bomb"));
+    }
+    for (int i = 0; i < 10; ++i){
+        deck->addCard(new Card("Blockade"));
+
+    } 
+    for (int i = 0; i < 10; ++i){
+
+        deck->addCard(new Card("Negotiate")); 
+    }  
 }
 
 GameEngine::GameEngine() {
@@ -90,7 +100,7 @@ void GameEngine::setMapSelect(const std::string& pathName) {
     mapSelect = pathName;
 }
 
-// ================== MAP SELECTION & LOADING (NO filesystem) ==================
+// ================== MAP SELECTION & LOADING ==================
 
 void GameEngine::listMapsInCurrentDirectory() {
      namespace fs = std::filesystem;
