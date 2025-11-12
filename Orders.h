@@ -82,12 +82,14 @@ class Blockade : public Order {
 private:
     Player* owner_;
     Territory* target_;
+    static Player* neutralPlayer_; // Static Neutral player
 
 public:
     Blockade();
     Blockade(Player* owner, Territory* target);
     bool validate() override;
     void execute() override;
+    static Player* getNeutralPlayer(); // Get or create Neutral player
 };
 
 // Airlift Order

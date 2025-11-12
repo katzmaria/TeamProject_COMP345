@@ -482,7 +482,80 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck) {
     }
     
     // Handle special card-based orders
-    if (kind == "blockade" || kind == "negotiate") {
+    if (kind == "blockade") {
+        // Check if player has the blockade card
+        if (!hand_) {
+            std::cout << "You don't have any cards!\n";
+            return nullptr;
+        }
+        
+        bool hasCard = false;
+        for (Card* c : hand_->getCards()) {
+            if (c->getType() == "blockade") {
+                hasCard = true;
+                break;
+            }
+        }
+        
+        if (!hasCard) {
+            std::cout << "You don't have a blockade card!\n";
+            return nullptr;
+        }
+        
+        const auto* terrs = territories();
+        if (!terrs || terrs->empty()) {
+            std::cout << *name_ << " has no territories.\n";
+            return nullptr;
+        }
+
+        std::cout << "\nBlockade order for " << *name_ << "\n";
+        std::cout << "Select TARGET territory to blockade (must be one you own):\n";
+        
+        for (std::size_t i = 0; i < terrs->size(); ++i) {
+            std::cout << i << ") " << terrs->at(i)->name 
+                      << " (armies: " << terrs->at(i)->armies << ")\n";
+        }
+
+        std::size_t tgtIdx;
+        std::cin >> tgtIdx;
+        if (tgtIdx >= terrs->size()) {
+            std::cout << "Invalid target territory.\n";
+            return nullptr;
+        }
+        Territory* target = terrs->at(tgtIdx);
+
+        // Find and remove the blockade card from hand
+        Card* usedCard = nullptr;
+        for (Card* c : hand_->getCards()) {
+            if (c->getType() == "blockade") {
+                usedCard = c;
+                break;
+            }
+        }
+        
+        if (usedCard) {
+            hand_->removeCard(usedCard);
+            std::cout << "Used blockade card from hand.\n";
+            
+            // Return card to deck
+            if (deck) {
+                deck->addCard(usedCard);
+                std::cout << "Card returned to deck.\n";
+            }
+        }
+
+        Order* created = new Blockade(this, target);
+        orders_->add(created);
+        
+        // Execute immediately
+        std::cout << "\n--- Executing Blockade Order ---\n";
+        created->execute();
+        std::cout << created->getAction() << "\n";
+        
+        return created;
+    }
+    
+    if (kind == "negotiate") {
         // Check if player has the card
         if (!hand_) {
             std::cout << "You don't have any cards!\n";

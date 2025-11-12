@@ -337,32 +337,32 @@ void Advance::execute() {
 }
 
 // BLOCKADE CLASS
+// BLOCKADE CLASS
+Player* Blockade::neutralPlayer_ = nullptr;
+
 Blockade::Blockade() : Order("Blockade"), owner_(nullptr), target_(nullptr) {}
 
 Blockade::Blockade(Player* owner, Territory* target)
     : Order("Blockade"), owner_(owner), target_(target) {}
 
-bool Blockade::validate() {
-    if (!owner_ || !target_) return false;
-    
-    // Check player owns the territory
-    const auto* terrs = owner_->territories();
-    if (!terrs) return false;
-    
-    bool ownsTerritory = false;
-    for (Territory* t : *terrs) {
-        if (t == target_) {
-            ownsTerritory = true;
-            break;
-        }
+Player* Blockade::getNeutralPlayer() {
+    if (!neutralPlayer_) {
+        neutralPlayer_ = new Player("Neutral");
     }
-    
-    if (!ownsTerritory) {
-        setAction("Invalid: Player does not own target territory");
+    return neutralPlayer_;
+}
+
+bool Blockade::validate() {
+    if (!owner_ || !target_) {
+        setAction("Invalid: missing owner or target");
         return false;
     }
     
-    // Check player has blockade card (implement when Hand::hasCard exists)
+    // Check player owns the territory (using owner field)
+    if (target_->owner != owner_) {
+        setAction("Invalid: Player does not own target territory");
+        return false;
+    }
     
     return true;
 }
@@ -374,7 +374,22 @@ void Blockade::execute() {
         return;
     }
 
-    setAction("Blockaded " + target_->name);
+    int originalArmies = target_->armies;
+    
+    // Double the army units
+    target_->armies *= 2;
+    
+    // Remove territory from owner's list
+    owner_->removeTerritory(target_);
+    
+    // Transfer ownership to Neutral player
+    Player* neutral = getNeutralPlayer();
+    target_->owner = neutral;
+    neutral->addTerritory(target_);
+    
+    setAction("Blockaded " + target_->name + "! Doubled armies from " + 
+              std::to_string(originalArmies) + " to " + std::to_string(target_->armies) + 
+              ". Territory now owned by Neutral player.");
     setExecuted(true);
 }
 
