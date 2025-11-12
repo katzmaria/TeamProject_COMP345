@@ -8,9 +8,11 @@ void testStartupPhase();   // Part 2: Game Startup Phase
 void testMainGameLoop();   // Part 3: Main Game Loop
 void testOrderExecution(); // Part 4: Order Execution
 void testCards();          // Part 5: Cards
+void testLoggingObserver(); // Part 5: Logging Observer
 void testOrdersLists();    // Additional: Orders Lists
 void testPlayers();        // Additional: Players
 void testCommandProcessor(); // Additional: Command Processing
+void testGameStates();     // Additional: Game States
 
 int main(int argc, char* argv[]) {
     // Check for command line argument --test
@@ -41,8 +43,8 @@ int main(int argc, char* argv[]) {
         std::cout << "\n=== PART 4: Order Execution ===\n";
         testOrderExecution();
         
-        std::cout << "\n=== PART 5: Cards ===\n";
-        testCards();
+        std::cout << "\n=== PART 5: Logging Observer ===\n";
+        testLoggingObserver();
         
         std::cout << "\n========================================\n";
         std::cout << "All Tests Complete\n";
