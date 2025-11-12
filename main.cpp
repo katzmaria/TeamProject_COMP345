@@ -59,6 +59,8 @@ int main(int argc, char* argv[]) {
         std::cout << "1. Test Game Startup Phase (Part 2)\n";
         std::cout << "2. Test Order Execution (Part 4)\n";
         std::cout << "3. Play Full Game\n";
+        std::cout << "4. Test Logging Observer\n";
+        std::cout << "5. Test CommandProcessing\n";
         std::cout << "Enter choice (1-3): ";
         
         int choice;
@@ -76,6 +78,14 @@ int main(int argc, char* argv[]) {
             case 3:
                 std::cout << "\n=== Starting Full Game ===\n";
                 testMainGameLoop();
+                break;
+
+            case 4:
+                testLoggingObserver();
+                break;
+
+            case 5:
+                testCommandProcessor();
                 break;
                 
             default:
