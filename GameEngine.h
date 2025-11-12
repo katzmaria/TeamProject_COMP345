@@ -9,11 +9,11 @@ class Deck;
 class GameEngine {
     private:
         std::string* currentState;
-        int *playerCount;
-        std::string mapSelect;
-        Map* m_map = nullptr;
+        int *playerCount;// number of players in the game
+        std::string mapSelect;// selected map file path
+        Map* m_map = nullptr; // currently loaded map
         std::vector<Player*> players;  // players in the game
-        Deck* deck = nullptr;// deck in startup
+        Deck* deck = nullptr; // deck of cards for the game
 
     public: 
         GameEngine();
