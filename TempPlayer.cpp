@@ -289,6 +289,25 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck) {
     }
     
     if (kind == "airlift") {
+        // Check if player has the airlift card
+        if (!hand_) {
+            std::cout << "You don't have any cards!\n";
+            return nullptr;
+        }
+        
+        bool hasCard = false;
+        for (Card* c : hand_->getCards()) {
+            if (c->getType() == "airlift") {
+                hasCard = true;
+                break;
+            }
+        }
+        
+        if (!hasCard) {
+            std::cout << "You don't have an airlift card!\n";
+            return nullptr;
+        }
+        
         const auto* terrs = territories();
         if (!terrs || terrs->size() < 2) {
             std::cout << *name_ << " needs at least 2 territories for airlift.\n";
@@ -332,6 +351,26 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck) {
         if (amount <= 0 || amount > source->armies) {
             std::cout << "Invalid amount.\n";
             return nullptr;
+        }
+
+        // Find and remove the airlift card from hand
+        Card* usedCard = nullptr;
+        for (Card* c : hand_->getCards()) {
+            if (c->getType() == "airlift") {
+                usedCard = c;
+                break;
+            }
+        }
+        
+        if (usedCard) {
+            hand_->removeCard(usedCard);
+            std::cout << "Used airlift card from hand.\n";
+            
+            // Return card to deck
+            if (deck) {
+                deck->addCard(usedCard);
+                std::cout << "Card returned to deck.\n";
+            }
         }
 
         Order* created = new Airlift(this, source, target, amount);

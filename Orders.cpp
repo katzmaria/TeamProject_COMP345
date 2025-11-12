@@ -363,27 +363,13 @@ bool Airlift::validate() {
         return false;
     }
     
-    // Check player owns both territories
-    const auto* terrs = owner_->territories();
-    if (!terrs) {
-        setAction("Invalid: player has no territories");
-        return false;
-    }
-    
-    bool ownsSource = false;
-    bool ownsTarget = false;
-    
-    for (Territory* t : *terrs) {
-        if (t == source_) ownsSource = true;
-        if (t == target_) ownsTarget = true;
-    }
-    
-    if (!ownsSource) {
+    // Check player owns both territories using the owner field
+    if (source_->owner != owner_) {
         setAction("Invalid: Player does not own source territory");
         return false;
     }
     
-    if (!ownsTarget) {
+    if (target_->owner != owner_) {
         setAction("Invalid: Player does not own target territory");
         return false;
     }
@@ -393,8 +379,6 @@ bool Airlift::validate() {
         setAction("Invalid: Source territory does not have enough armies");
         return false;
     }
-    
-    // Check player has airlift card (implement when Hand::hasCard exists)
     
     return true;
 }

@@ -6,7 +6,7 @@
 // I created this just to check if my cards are working
 void testCards() {
     std::cout << "=== Testing Cards ===" << std::endl;
-
+ 
     // Create deck with all types
     Deck deck;
     deck.addCard(new Card("bomb"));
