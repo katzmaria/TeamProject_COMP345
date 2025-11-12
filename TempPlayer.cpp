@@ -195,6 +195,12 @@ Order* Player::issueOrder(const std::string& kind) {
         
         // Commit these reinforcements so they can't be used again this turn
         commitReinforcements(amount);
+        
+        // Execute immediately so armies appear on map right away
+        std::cout << "\n--- Executing Deploy Order ---\n";
+        created->execute();
+        std::cout << created->getAction() << "\n";
+        
         std::cout << "Committed " << amount << " armies. Available now: " 
                   << getAvailableReinforcements() << "\n";
 
@@ -273,6 +279,12 @@ Order* Player::issueOrder(const std::string& kind) {
 
         Order* created = new Advance(this, source, target, amount);
         orders_->add(created);
+        
+        // Execute immediately so battle/movement happens right away
+        std::cout << "\n--- Executing Advance Order ---\n";
+        created->execute();
+        std::cout << created->getAction() << "\n";
+        
         return created;
     }
     
@@ -324,6 +336,12 @@ Order* Player::issueOrder(const std::string& kind) {
 
         Order* created = new Airlift(this, source, target, amount);
         orders_->add(created);
+        
+        // Execute immediately
+        std::cout << "\n--- Executing Airlift Order ---\n";
+        created->execute();
+        std::cout << created->getAction() << "\n";
+        
         return created;
     }
     

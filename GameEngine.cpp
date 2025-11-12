@@ -607,79 +607,15 @@ void GameEngine::executeOrdersPhase() {
     for (Player* p : players) {
         if (p) {
             p->resetCommitted();
-            p->setConqueredThisTurn(false);
+            // Don't reset conquered flag here - it was already set during immediate execution
         }
     }
 
-    //  1: Execute all DEPLOY orders first (round-robin) 
-    bool executedSomething = true;
-    while (executedSomething) {
-        executedSomething = false;
-
-        for (Player* p : players) {
-            if (!p) continue;
-
-            OrdersList* ol = p->orders();
-            if (!ol) continue;
-
-            int sz = ol->size();
-            int deployIndex = -1;
-
-            // find first Deploy order in this player's list
-            for (int i = 0; i < sz; ++i) {
-                Order* o = ol->get(i);
-                if (o && o->getOrderName() == "Deploy") {
-                    deployIndex = i;
-                    break;
-                }
-            }
-
-            if (deployIndex != -1) {
-                Order* o = ol->get(deployIndex);
-                std::cout << "Executing Deploy order...\n";
-                o->execute();
-                std::cout << "  -> " << o->getAction() << "\n";
-
-                // remove executed Deploy from the list
-                ol->remove(deployIndex);
-                executedSomething = true;
-            }
-        }
-    }
-
-    // 2: Execute remaining orders round-robin 
-    bool ordersRemain = true;
-    while (ordersRemain) {
-        ordersRemain = false;
-
-        for (Player* p : players) {
-            if (!p) continue;
-
-            OrdersList* ol = p->orders();
-            if (!ol) continue;
-
-            int sz = ol->size();
-            if (sz == 0) continue;   // this player has no more orders
-
-            ordersRemain = true;     // at least one player still has orders
-
-            Order* o = ol->get(0);   // execute from the front
-            if (!o) {
-                ol->remove(0);
-                continue;
-            }
-
-            std::cout << "Executing order: " << o->getOrderName() << "\n";
-            o->execute();
-            std::cout << "  -> " << o->getAction() << "\n";
-
-            // remove executed order 
-            ol->remove(0);
-        }
-    }
+    std::cout << "Orders were executed immediately as they were issued.\n";
     
     // Award cards to players who conquered at least one territory this turn
     std::cout << "\n--- Card Distribution ---\n";
+    bool anyCardDrawn = false;
     for (Player* p : players) {
         if (!p) continue;
         
@@ -690,8 +626,14 @@ void GameEngine::executeOrdersPhase() {
             if (deck) {
                 deck->draw(p->hand());
                 std::cout << p->name() << " conquered territory this turn and draws 1 card!\n";
+                anyCardDrawn = true;
             }
+            // Reset flag for next turn
+            p->setConqueredThisTurn(false);
         }
+    }
+    if (!anyCardDrawn) {
+        std::cout << "No territories conquered this turn. No cards drawn.\n";
     }
 
     std::cout << "=== End of Execute Orders Phase ===\n";
