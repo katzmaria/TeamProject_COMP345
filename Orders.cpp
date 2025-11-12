@@ -118,20 +118,40 @@ Bomb::Bomb(Player* owner, Territory* target)
     : Order("Bomb"), owner_(owner), target_(target) {}
 
 bool Bomb::validate() { 
-    if (!owner_ || !target_) return false;
-    
-    // Check target is NOT owned by player
-    const auto* terrs = owner_->territories();
-    if (terrs) {
-        for (Territory* t : *terrs) {
-            if (t == target_) {
-                setAction("Invalid: Cannot bomb own territory");
-                return false;
-            }
-        }
+    if (!owner_ || !target_) {
+        setAction("Invalid: missing owner or target");
+        return false;
     }
     
-    // Check player has bomb card (implement when Hand::hasCard exists)
+    // Check target is NOT owned by player (using owner field)
+    if (target_->owner == owner_) {
+        setAction("Invalid: Cannot bomb own territory");
+        return false;
+    }
+    
+    // Check if target is adjacent to at least one territory owned by the player
+    const auto* ownerTerrs = owner_->territories();
+    if (!ownerTerrs || ownerTerrs->empty()) {
+        setAction("Invalid: Player has no territories");
+        return false;
+    }
+    
+    bool isAdjacent = false;
+    for (Territory* ownedTerritory : *ownerTerrs) {
+        // Check if target is in the neighbors of this owned territory
+        for (Territory* neighbor : ownedTerritory->neighbors) {
+            if (neighbor == target_) {
+                isAdjacent = true;
+                break;
+            }
+        }
+        if (isAdjacent) break;
+    }
+    
+    if (!isAdjacent) {
+        setAction("Invalid: Target territory is not adjacent to any territory owned by player");
+        return false;
+    }
     
     return true; 
 }
@@ -143,7 +163,14 @@ void Bomb::execute() {
         return;
     }
 
-    setAction("Bombed " + target_->name);
+    // Remove half of the army units from the target territory
+    int originalArmies = target_->armies;
+    int armiesRemoved = originalArmies / 2;
+    target_->armies -= armiesRemoved;
+    
+    setAction("Bombed " + target_->name + "! Removed " + std::to_string(armiesRemoved) + 
+              " armies (was " + std::to_string(originalArmies) + ", now " + 
+              std::to_string(target_->armies) + ")");
     setExecuted(true);
 }
 

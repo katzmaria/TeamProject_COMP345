@@ -1,6 +1,7 @@
 #include "Player.h"
 #include <algorithm>
 #include <iostream>
+#include <map>
 #include "Orders.h" 
 #include "Map.h"   
 #include "Cards.h"   
@@ -384,8 +385,104 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck) {
         return created;
     }
     
+    if (kind == "bomb") {
+        // Check if player has the bomb card
+        if (!hand_) {
+            std::cout << "You don't have any cards!\n";
+            return nullptr;
+        }
+        
+        bool hasCard = false;
+        for (Card* c : hand_->getCards()) {
+            if (c->getType() == "bomb") {
+                hasCard = true;
+                break;
+            }
+        }
+        
+        if (!hasCard) {
+            std::cout << "You don't have a bomb card!\n";
+            return nullptr;
+        }
+        
+        const auto* terrs = territories();
+        if (!terrs || terrs->empty()) {
+            std::cout << *name_ << " has no territories.\n";
+            return nullptr;
+        }
+
+        std::cout << "\nBomb order for " << *name_ << "\n";
+        std::cout << "Select TARGET territory to bomb (must be enemy territory adjacent to yours):\n";
+        
+        // Collect all enemy territories adjacent to player's territories
+        std::vector<Territory*> adjacentEnemies;
+        std::map<Territory*, int> territoryIndexMap;
+        
+        for (Territory* ownedTerritory : *terrs) {
+            for (Territory* neighbor : ownedTerritory->neighbors) {
+                // Check if neighbor is NOT owned by this player
+                if (neighbor->owner != this) {
+                    // Check if not already in list
+                    if (std::find(adjacentEnemies.begin(), adjacentEnemies.end(), neighbor) == adjacentEnemies.end()) {
+                        adjacentEnemies.push_back(neighbor);
+                    }
+                }
+            }
+        }
+        
+        if (adjacentEnemies.empty()) {
+            std::cout << "No enemy territories adjacent to your territories!\n";
+            return nullptr;
+        }
+        
+        for (std::size_t i = 0; i < adjacentEnemies.size(); ++i) {
+            std::string ownerName = adjacentEnemies[i]->owner ? adjacentEnemies[i]->owner->name() : "Neutral";
+            std::cout << i << ") " << adjacentEnemies[i]->name 
+                      << " (armies: " << adjacentEnemies[i]->armies 
+                      << ", owner: " << ownerName << ")\n";
+        }
+
+        std::size_t tgtIdx;
+        std::cin >> tgtIdx;
+        if (tgtIdx >= adjacentEnemies.size()) {
+            std::cout << "Invalid target territory.\n";
+            return nullptr;
+        }
+        Territory* target = adjacentEnemies[tgtIdx];
+
+        // Find and remove the bomb card from hand
+        Card* usedCard = nullptr;
+        for (Card* c : hand_->getCards()) {
+            if (c->getType() == "bomb") {
+                usedCard = c;
+                break;
+            }
+        }
+        
+        if (usedCard) {
+            hand_->removeCard(usedCard);
+            std::cout << "Used bomb card from hand.\n";
+            
+            // Return card to deck
+            if (deck) {
+                deck->addCard(usedCard);
+                std::cout << "Card returned to deck.\n";
+            }
+        }
+
+        Order* created = new Bomb(this, target);
+        orders_->add(created);
+        
+        // Execute immediately
+        std::cout << "\n--- Executing Bomb Order ---\n";
+        created->execute();
+        std::cout << created->getAction() << "\n";
+        
+        return created;
+    }
+    
     // Handle special card-based orders
-    if (kind == "bomb" || kind == "blockade" || kind == "negotiate") {
+    if (kind == "blockade" || kind == "negotiate") {
         // Check if player has the card
         if (!hand_) {
             std::cout << "You don't have any cards!\n";
