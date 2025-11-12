@@ -364,7 +364,7 @@ FileLineReader& FileLineReader::operator=(const FileLineReader& flr) {
         }
         delete filename;
         filename = new std::string(*(flr.filename));
-        // CRITICAL: Open the file for the current instance
+      
         file_.open(*filename); 
     }
     return *this;
@@ -392,27 +392,5 @@ std::string FileLineReader::readLineFromFile() {
     return "";
 
 
-    /* Use static file stream to maintain state between calls
-    static std::ifstream file;
-    static bool isFirstCall = true;
     
-    // Only open the file on first call
-    if (isFirstCall) {
-        file.open(*filename);
-        if (!file.is_open()) {
-            std::cout << "Error: Could not open file " << *filename << std::endl;
-            return "";
-        }
-        isFirstCall = false;
-    }
-    
-    std::string line;
-    if (std::getline(file, line)) {
-        return line;
-    }
-    
-    // Reset the file stream when we reach the end
-    file.close();
-    isFirstCall = true;
-    return "";*/
 }

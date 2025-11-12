@@ -6,8 +6,6 @@
 #include <iostream>
 #include "LoggingObserver.h"
 
-// IMPORTANT: refer to team project assignment 2 part 1 for details about the implementation of
-// the classes below.
 
 class Command : public ILoggable, public Subject {
     private: 
