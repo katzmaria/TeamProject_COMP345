@@ -137,11 +137,8 @@ void Deck::addCard(Card* card) {
 Card* Deck::draw(Hand* hand) {
     if (cards->empty()) return nullptr;
 
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dist(0, cards->size() - 1);
-
-    int index = dist(gen);
+    // Simple random using rand()
+    int index = rand() % cards->size();
     Card* drawn = cards->at(index);
 
     // give ownership to hand
