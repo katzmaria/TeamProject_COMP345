@@ -10,6 +10,7 @@ struct Territory {
     int continentID = -1;
     std::string name;
     int x = 0, y = 0;
+    int armies = 0;  // number of army units on this territory
 
     std::vector<std::string> neighborsNames;
     std::vector<Territory*> neighbors;

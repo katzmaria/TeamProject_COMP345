@@ -565,7 +565,7 @@ void GameEngine::issueOrdersPhase() {
             }
 
             std::string kind;
-            if (p->getReinforcementPool() > 0) {
+            if (p->getAvailableReinforcements() > 0) {
                 // Assignment rule: while you have reinforcements, you only issue Deploy orders
                 kind = "deploy";
                 std::cout << "You still have reinforcement armies, issuing a Deploy order.\n";
@@ -601,6 +601,14 @@ void GameEngine::executeOrdersPhase() {
     if (players.empty()) {
         std::cout << "No players in the game.\n";
         return;
+    }
+    
+    // Reset all players' committed reinforcements and conquered flags at start of execution
+    for (Player* p : players) {
+        if (p) {
+            p->resetCommitted();
+            p->setConqueredThisTurn(false);
+        }
     }
 
     //  1: Execute all DEPLOY orders first (round-robin) 
@@ -667,6 +675,22 @@ void GameEngine::executeOrdersPhase() {
 
             // remove executed order 
             ol->remove(0);
+        }
+    }
+    
+    // Award cards to players who conquered at least one territory this turn
+    std::cout << "\n--- Card Distribution ---\n";
+    for (Player* p : players) {
+        if (!p) continue;
+        
+        if (p->hasConqueredThisTurn()) {
+            if (!p->hand()) {
+                p->setHand(new Hand());
+            }
+            if (deck) {
+                deck->draw(p->hand());
+                std::cout << p->name() << " conquered territory this turn and draws 1 card!\n";
+            }
         }
     }
 

@@ -14,6 +14,8 @@ private:
     Hand*                       hand_;        // owned by Player
     OrdersList*                 orders_;      // owned by Player
     int*                        reinforcementPool_;
+    int*                        committedReinforcements_; // track armies committed during issue phase
+    bool*                       conqueredThisTurn_; // track if player conquered a territory this turn
 
 public:
 
@@ -51,5 +53,12 @@ public:
     void addReinforcements(int delta);   
     std::vector<Territory*> toDefend() const;
     std::vector<Territory*> toAttack() const;
+    
+    int  getAvailableReinforcements() const; // pool minus committed
+    void commitReinforcements(int amount);
+    void resetCommitted(); // call at start of execute phase
+    
+    bool hasConqueredThisTurn() const;
+    void setConqueredThisTurn(bool value);
 
 };

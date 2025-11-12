@@ -11,14 +11,18 @@ Player::Player()
       territories_(new std::vector<Territory*>()),
       hand_(nullptr),
       orders_(nullptr),
-      reinforcementPool_(new int(0)) {}
+      reinforcementPool_(new int(0)),
+      committedReinforcements_(new int(0)),
+      conqueredThisTurn_(new bool(false)) {}
 //param constructor
 Player::Player(const std::string& name)
     : name_(new std::string(name)),
       territories_(new std::vector<Territory*>()),
       hand_(nullptr),
       orders_(nullptr),
-      reinforcementPool_(new int(0)) {}
+      reinforcementPool_(new int(0)),
+      committedReinforcements_(new int(0)),
+      conqueredThisTurn_(new bool(false)) {}
 
 // copy constructor (deep copy for Hand/OrdersList; shallow for Territory* list)
 Player::Player(const Player& other)
@@ -26,7 +30,9 @@ Player::Player(const Player& other)
       territories_(new std::vector<Territory*>(*other.territories_)),
       hand_(other.hand_ ? new Hand(*other.hand_) : nullptr),
       orders_(other.orders_ ? new OrdersList(*other.orders_) : nullptr),
-      reinforcementPool_(new int(*other.reinforcementPool_)) {}
+      reinforcementPool_(new int(*other.reinforcementPool_)),
+      committedReinforcements_(new int(*other.committedReinforcements_)),
+      conqueredThisTurn_(new bool(*other.conqueredThisTurn_)) {}
 
 
 // copy assignment
@@ -43,6 +49,8 @@ Player& Player::operator=(const Player& other) {
     hand_   = other.hand_   ? new Hand(*other.hand_)         : nullptr;
     orders_ = other.orders_ ? new OrdersList(*other.orders_) : nullptr;
     *reinforcementPool_ = *other.reinforcementPool_;
+    *committedReinforcements_ = *other.committedReinforcements_;
+    *conqueredThisTurn_ = *other.conqueredThisTurn_;
     return *this;
 }
 
@@ -53,6 +61,8 @@ Player::~Player() {
     delete hand_;
     delete orders_;
     delete reinforcementPool_;
+    delete committedReinforcements_;
+    delete conqueredThisTurn_;
 }
 
 // ----- getters/setters -----
@@ -143,9 +153,9 @@ Order* Player::issueOrder(const std::string& kind) {
     }
 
     if (kind == "deploy") {
-        int pool = getReinforcementPool();
-        if (pool <= 0) {
-            std::cout << *name_ << " has no reinforcement armies.\n";
+        int available = getAvailableReinforcements();
+        if (available <= 0) {
+            std::cout << *name_ << " has no available reinforcement armies.\n";
             return nullptr;
         }
 
@@ -156,7 +166,7 @@ Order* Player::issueOrder(const std::string& kind) {
         }
 
         std::cout << "\nDeploy order for " << *name_ << "\n";
-        std::cout << "Reinforcement pool: " << pool << "\n";
+        std::cout << "Available reinforcements: " << available << "\n";
         std::cout << "Select a territory index:\n";
 
         for (std::size_t i = 0; i < terrs->size(); ++i) {
@@ -171,9 +181,9 @@ Order* Player::issueOrder(const std::string& kind) {
         }
 
         int amount;
-        std::cout << "How many armies to deploy? (1.." << pool << "): ";
+        std::cout << "How many armies to deploy? (1.." << available << "): ";
         std::cin >> amount;
-        if (amount <= 0 || amount > pool) {
+        if (amount <= 0 || amount > available) {
             std::cout << "Invalid amount.\n";
             return nullptr;
         }
@@ -182,17 +192,144 @@ Order* Player::issueOrder(const std::string& kind) {
 
         Order* created = new Deploy(this, target, amount);
         orders_->add(created);
-
-        // DON'T spend from reinforcement pool here - it happens in execute()
-        // setReinforcementPool(pool - amount);  // ← REMOVE THIS LINE
+        
+        // Commit these reinforcements so they can't be used again this turn
+        commitReinforcements(amount);
+        std::cout << "Committed " << amount << " armies. Available now: " 
+                  << getAvailableReinforcements() << "\n";
 
         return created;
     }
+    
+    if (kind == "advance") {
+        const auto* terrs = territories();
+        if (!terrs || terrs->empty()) {
+            std::cout << *name_ << " has no territories.\n";
+            return nullptr;
+        }
+
+        std::cout << "\n=== Advance order for " << *name_ << " ===\n";
+        std::cout << "Select SOURCE territory (must be one you own):\n";
+        for (std::size_t i = 0; i < terrs->size(); ++i) {
+            std::cout << "  [" << i << "] " << terrs->at(i)->name 
+                      << " (armies: " << terrs->at(i)->armies << ")\n";
+        }
+
+        std::size_t srcIdx;
+        std::cout << "Enter source index: ";
+        std::cin >> srcIdx;
+        if (srcIdx >= terrs->size()) {
+            std::cout << "Invalid source territory.\n";
+            return nullptr;
+        }
+        Territory* source = terrs->at(srcIdx);
+
+        if (source->armies <= 0) {
+            std::cout << "Source has no armies to move.\n";
+            return nullptr;
+        }
+
+        std::cout << "\nSelect TARGET territory (must be adjacent to " << source->name << "):\n";
+        std::cout << "Adjacent territories:\n";
+        for (std::size_t i = 0; i < source->neighbors.size(); ++i) {
+            Territory* n = source->neighbors[i];
+            std::string ownerName = "Neutral";
+            if (n->owner) {
+                ownerName = n->owner->name();
+            }
+            
+            std::string relation = (n->owner == this) ? "[YOUR TERRITORY]" : "[ENEMY]";
+            
+            std::cout << "  [" << i << "] " << n->name 
+                      << " - Owner: " << ownerName
+                      << " " << relation
+                      << " (armies: " << n->armies << ")\n";
+        }
+
+        std::size_t tgtIdx;
+        std::cout << "Enter target index: ";
+        std::cin >> tgtIdx;
+        if (tgtIdx >= source->neighbors.size()) {
+            std::cout << "Invalid target territory.\n";
+            return nullptr;
+        }
+        Territory* target = source->neighbors[tgtIdx];
+
+        int amount;
+        std::cout << "\nHow many armies to advance? (1.." << source->armies << "): ";
+        std::cin >> amount;
+        if (amount <= 0 || amount > source->armies) {
+            std::cout << "Invalid amount.\n";
+            return nullptr;
+        }
+        
+        // Show what will happen
+        if (target->owner == this) {
+            std::cout << "→ This will MOVE " << amount << " armies to your own territory (reinforcement)\n";
+        } else {
+            std::cout << "→ This will ATTACK " << target->name << " with " << amount << " armies!\n";
+            std::cout << "   Battle: " << amount << " attackers vs " << target->armies << " defenders\n";
+        }
+
+        Order* created = new Advance(this, source, target, amount);
+        orders_->add(created);
+        return created;
+    }
+    
+    if (kind == "airlift") {
+        const auto* terrs = territories();
+        if (!terrs || terrs->size() < 2) {
+            std::cout << *name_ << " needs at least 2 territories for airlift.\n";
+            return nullptr;
+        }
+
+        std::cout << "\nAirlift order for " << *name_ << "\n";
+        std::cout << "Select SOURCE territory index:\n";
+        for (std::size_t i = 0; i < terrs->size(); ++i) {
+            std::cout << i << ") " << terrs->at(i)->name 
+                      << " (armies: " << terrs->at(i)->armies << ")\n";
+        }
+
+        std::size_t srcIdx;
+        std::cin >> srcIdx;
+        if (srcIdx >= terrs->size()) {
+            std::cout << "Invalid source territory.\n";
+            return nullptr;
+        }
+        Territory* source = terrs->at(srcIdx);
+
+        std::cout << "\nSelect TARGET territory index (can be non-adjacent):\n";
+        for (std::size_t i = 0; i < terrs->size(); ++i) {
+            if (i != srcIdx) {
+                std::cout << i << ") " << terrs->at(i)->name 
+                          << " (armies: " << terrs->at(i)->armies << ")\n";
+            }
+        }
+
+        std::size_t tgtIdx;
+        std::cin >> tgtIdx;
+        if (tgtIdx >= terrs->size() || tgtIdx == srcIdx) {
+            std::cout << "Invalid target territory.\n";
+            return nullptr;
+        }
+        Territory* target = terrs->at(tgtIdx);
+
+        int amount;
+        std::cout << "How many armies to airlift? (1.." << source->armies << "): ";
+        std::cin >> amount;
+        if (amount <= 0 || amount > source->armies) {
+            std::cout << "Invalid amount.\n";
+            return nullptr;
+        }
+
+        Order* created = new Airlift(this, source, target, amount);
+        orders_->add(created);
+        return created;
+    }
+    
     Order* created = nullptr;
-    if      (kind == "advance")   created = new Advance();
-    else if (kind == "bomb")      created = new Bomb();
+    if      (kind == "bomb")      created = new Bomb();
     else if (kind == "blockade")  created = new Blockade();
-    else if (kind == "airlift")   created = new Airlift();
     else if (kind == "negotiate") created = new Negotiate();
 
     if (created) {
@@ -212,3 +349,29 @@ std::ostream& operator<<(std::ostream& os, const Player& p) {
        << (p.orders_ ? "has an orders list" : "no orders list");
     return os;
 }
+
+// Get available reinforcements (pool minus what's been committed this turn)
+int Player::getAvailableReinforcements() const {
+    return *reinforcementPool_ - *committedReinforcements_;
+}
+
+// Commit reinforcements during issue phase
+void Player::commitReinforcements(int amount) {
+    *committedReinforcements_ += amount;
+}
+
+// Reset committed at start of execute phase
+void Player::resetCommitted() {
+    *committedReinforcements_ = 0;
+}
+
+// Check if player conquered a territory this turn
+bool Player::hasConqueredThisTurn() const {
+    return *conqueredThisTurn_;
+}
+
+// Set conquered flag
+void Player::setConqueredThisTurn(bool value) {
+    *conqueredThisTurn_ = value;
+}
+
