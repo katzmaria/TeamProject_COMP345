@@ -29,3 +29,9 @@ Command's Effect: Invalid command in mapvalidated state. Expected 'addplayer <pl
 Command's Effect: Adding player: 
 Command's Effect: Adding additional player: 
 Command's Effect: Starting game
+Command's Effect: Invalid command in start state. Expected 'loadmap <filename>'
+Command's Effect: Loading map file: 
+Command's Effect: Validating map
+Command's Effect: Adding player: 
+Command's Effect: Adding additional player: 
+Command's Effect: Starting game
