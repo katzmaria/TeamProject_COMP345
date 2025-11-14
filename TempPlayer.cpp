@@ -155,19 +155,23 @@ std::vector<Territory*> Player::toAttack() const {
 
 // changed version
 Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector<Player*>* allPlayers) {
+    //ensure orders list exists 
     if (!orders_) {
         orders_ = new OrdersList();
     }
-
+    //synonymous to toDefend()
     if (kind == "deploy") {
         // check reinforcements 
+        //ensure the user has available reinforcements
+        //if <0 cannot do deploy
         int available = getAvailableReinforcements();
         if (available <= 0) {
             std::cout << *name_ << " has no available reinforcement armies.\n";
             return nullptr;
         }
 
-        // check territories of player 
+        // get territories of player 
+        //ensure you have atleast one to defend/deploy to
         const auto* terrs = territories();
         if (!terrs || terrs->empty()) {
             std::cout << *name_ << " has no territories to deploy to.\n";
@@ -179,17 +183,20 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
         std::cout << "Available reinforcements: " << available << "\n";
         std::cout << "Select a territory index:\n";
 
+        // list territories and ask which ti defend - toDefend imp
         for (std::size_t i = 0; i < terrs->size(); ++i) {
             std::cout << i << ") " << terrs->at(i)->name << "\n";
         }
 
         std::size_t idx;
         std::cin >> idx;
+        //bound check
         if (idx >= terrs->size()) {
             std::cout << "Invalid territory index.\n";
             return nullptr;
         }
 
+        //ask amount to deploy
         int amount;
         std::cout << "How many armies to deploy? (1.." << available << "): ";
         std::cin >> amount;
@@ -198,34 +205,38 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
             return nullptr;
         }
 
+        //get the target territory 
         Territory* target = terrs->at(idx);
 
-        //create and add order to list 
+        //create and add Deploy to list 
         Order* created = new Deploy(this, target, amount);
         orders_->add(created);
         
-        // Commit these reinforcements so they can't be used again this turn
+        // Commit these reinforcements to the order such that
+        // they can't be used again this turn
         commitReinforcements(amount);
         
         // Execute immediately so armies appear on map right away
         std::cout << "\n--- Executing Deploy Order ---\n";
         created->execute();
-        std::cout << created->getAction() << "\n";
+        std::cout << created->getAction() << "\n"; //print ot console
         
         std::cout << "Committed " << amount << " armies. Available now: " 
                   << getAvailableReinforcements() << "\n";
 
         return created;
     }
-    
+    //synonymous to toAttack()
     if (kind == "advance") {
         //checkterritories of player
+        //ensure atleast 1 otherwise cannot advance/attack
         const auto* terrs = territories();
         if (!terrs || terrs->empty()) {
             std::cout << *name_ << " has no territories.\n";
             return nullptr;
         }
         //selecte source and target 
+        //wjere source belongs to u and target is someone elses
         std::cout << "\n=== Advance order for " << *name_ << " ===\n";
         std::cout << "Select SOURCE territory (must be one you own):\n";
         for (std::size_t i = 0; i < terrs->size(); ++i) {
@@ -233,6 +244,7 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
                       << " (armies: " << terrs->at(i)->armies << ")\n";
         }
 
+        //after seeing your territroies with army counts, select 1 by idx
         std::size_t srcIdx;
         std::cout << "Enter source index: ";
         std::cin >> srcIdx;
@@ -242,6 +254,7 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
         }
         Territory* source = terrs->at(srcIdx);
 
+        //ensure source terr has armies to attack/advance with
         if (source->armies <= 0) {
             std::cout << "Source has no armies to move.\n";
             return nullptr;
@@ -251,21 +264,25 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
 // select the target territory
         std::cout << "\nSelect TARGET territory (must be adjacent to " << source->name << "):\n";
         std::cout << "Adjacent territories:\n";
+        //show all neighbors of source terr
+        //source->neighbours is vector of adjacent terrs
         for (std::size_t i = 0; i < source->neighbors.size(); ++i) {
             Territory* n = source->neighbors[i];
+
             std::string ownerName = "Neutral";
             if (n->owner) {
                 ownerName = n->owner->name();
             }
-            // show if its yours or enemies 
+            // show if its yours or enemies alongsid eother info
             std::string relation = (n->owner == this) ? "[YOUR TERRITORY]" : "[ENEMY]";
             
             std::cout << "  [" << i << "] " << n->name 
-                      << " - Owner: " << ownerName
+                      << " - Owner: " << ownerName //default neutral 
                       << " " << relation
                       << " (armies: " << n->armies << ")\n";
         }
 
+        //pick targey terr by idx,  bounds check 
         std::size_t tgtIdx;
         std::cout << "Enter target index: ";
         std::cin >> tgtIdx;
@@ -275,7 +292,7 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
         }
         Territory* target = source->neighbors[tgtIdx];
 
-        // select amount to attack
+        // select amount of armies to attack/advance with
         int amount;
         std::cout << "\nHow many armies to advance? (1.." << source->armies << "): ";
         std::cin >> amount;
@@ -284,7 +301,8 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
             return nullptr;
         }
         
-        // Show what will happen
+        // Show what will happen - ie whether moving to open space(owner=neutral)
+        //or attacking owned terr 
         if (target->owner == this) {
             std::cout << "→ This will MOVE " << amount << " armies to your own territory (reinforcement)\n";
         } else {
@@ -292,6 +310,7 @@ Order* Player::issueOrder(const std::string& kind, Deck* deck, const std::vector
             std::cout << "   Battle: " << amount << " attackers vs " << target->armies << " defenders\n";
         }
 
+        //create advance order and add to lsit 
         Order* created = new Advance(this, source, target, amount);
         orders_->add(created);
         

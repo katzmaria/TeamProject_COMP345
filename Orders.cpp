@@ -532,11 +532,11 @@ void OrdersList::executeAllOrders() {
         orders[i]->execute();
     }
 }
-
+//return order size
 int OrdersList::size() const {
     return static_cast<int>(orders.size());
 }
-
+//get an order at idx
 Order* OrdersList::get(int i) const {
     if (i < 0 || i >= static_cast<int>(orders.size())) {
         return nullptr;
