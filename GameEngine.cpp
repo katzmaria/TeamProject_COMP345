@@ -482,12 +482,12 @@ void GameEngine::startupPhase() {
 
 void GameEngine::reinforcementPhase() {
     std::cout << "\n=== Reinforcement Phase ===\n";
-
+    //check if map is loaded
     if (!m_map) {
         std::cout << "No map loaded – skipping reinforcement.\n";
         return;
     }
-
+    // get continents and territories from map
     const std::vector<Continent*>& continents     = m_map->getContinents();
     const std::vector<Territory*>& allTerritories = m_map->getTerritories();
 
@@ -496,7 +496,9 @@ void GameEngine::reinforcementPhase() {
         
         // Change relations at start of turn
         p->clearDiplomaticRelations();
+        // get territories owned by player
 
+        // handles the case where territories() returns nullptr
         const std::vector<Territory*>* ownedPtr = p->territories();
         if (!ownedPtr) {
             std::cout << p->name()
@@ -504,26 +506,28 @@ void GameEngine::reinforcementPhase() {
             continue;
         }
         const auto& owned = *ownedPtr;
-
+        
         int numOwned = static_cast<int>(owned.size());
         // std::cout << "DEBUG: " << p->name() << " territories() returned vector with " 
         //           << numOwned << " territories.\n";
         
+        // handles the case wher
         if (numOwned == 0) {
             std::cout << p->name()
                       << " has no territories and receives 0 reinforcement armies.\n";
             continue;
         }
         // base = floor(#territories / 3)
+        // base amnt of reinforcements without cont bonuses
         int base = numOwned / 3;
 
         int continentBonus = 0;
         for (Continent* c : continents) {
             if (!c) continue;
-
+            // check if player owns all territories in this continent
             bool ownsAll = true;
             bool hasAny  = false;
-
+            
             for (Territory* t : allTerritories) {
                 if (!t) continue;
                 if (t->continentID != c->continentID) continue;
@@ -541,11 +545,12 @@ void GameEngine::reinforcementPhase() {
             }
         }
         // theres minimum 3 armies if player owns at least 1 territory
+        //total amount of reinforcements
         int total = base + continentBonus;
         if (total < 3) {
             total = 3;  
         }
-
+        //use addReinforcements method from Player class
         p->addReinforcements(total);
 
         std::cout << p->name()
@@ -566,24 +571,25 @@ void GameEngine::issueOrdersPhase() {
         std::cout << "No players in the game.\n";
         return;
     }
-
+    // done[] tracks whether each player is done issuing orders
     const std::size_t n = players.size();
     std::vector<bool> done(n, false);
     std::size_t remaining = n;
 
     while (remaining > 0) {
+        // check if a player is "done" this round
         bool anyIssuedThisRound = false;
-
+        // itterate over player aslong as not done
         for (std::size_t i = 0; i < n; ++i) {
             if (done[i]) continue;
-
+            //verify player exists
             Player* p = players[i];
             if (!p) {
                 done[i] = true;
                 --remaining;
                 continue;
             }
-
+            // check if player has any territories if not skipping their turn
             const auto* terrs = p->territories();
             if (!terrs || terrs->empty()) {
                 std::cout << p->name()
@@ -593,6 +599,7 @@ void GameEngine::issueOrdersPhase() {
                 continue;
             }
 
+            // Display player turn info
             std::cout << "\n--- " << p->name() << "'s turn to issue orders ---\n";
             std::cout << "Reinforcement pool:" << p->getReinforcementPool() << "\n";
             
@@ -604,6 +611,7 @@ void GameEngine::issueOrdersPhase() {
                 }
                 std::cout << "\n";
             }
+            //prompt player to issue an order or be done
             std::cout << "Issue an order? (y/n): ";
             char choice;
             std::cin >> choice;
@@ -613,7 +621,7 @@ void GameEngine::issueOrdersPhase() {
                 --remaining;
                 continue;
             }
-
+            // if the player still has reinforcements, they must issue Deploy orders
             std::string kind;
             if (p->getAvailableReinforcements() > 0) {
                 // while you have reinforcements, you only issue Deploy orders
@@ -627,13 +635,14 @@ void GameEngine::issueOrdersPhase() {
                 std::cout << "Order type: ";
                 std::cin >> kind;
                 
-                // If player wants to play a card, display their hand and let them choose what to play
+                //if player wants to play a card, display their hand and let them choose what to play
                 if (kind == "card") {
+                    // as long as player has no cards reprompt
                     if (!p->hand() || p->hand()->getCards().empty()) {
                         std::cout << "You have no cards to play!\n";
                         continue;
                     }
-                    
+                    // displaying cards in hand
                     std::cout << "\nYour cards:\n";
                     std::vector<Card*> handCards = p->hand()->getCards();
                     for (size_t i = 0; i < handCards.size(); ++i) {
@@ -649,16 +658,16 @@ void GameEngine::issueOrdersPhase() {
                         continue;
                     }
                     
-                    // Set kind to the card type
-                    kind = handCards[cardIdx]->getType();
+                    // Set kind to the card type-- bomb airlift etc
+                    kind=handCards[cardIdx]->getType();
                     std::cout << "Playing " << kind << " card!\n";
                     
-                    // Remove card from hand after selecting it
-                    // and add it back to the deck after playing
+
                 }
             }
-
+            //issue the actual order, returns nullptr if cannot issue
             Order* issued = p->issueOrder(kind, deck, &players);
+            // ensures result isnt nullptr
             if (issued) {
                 std::cout << "Issued a \"" << kind << "\" order.\n";
                 anyIssuedThisRound = true;
@@ -668,7 +677,7 @@ void GameEngine::issueOrdersPhase() {
                 done[i] = true;
                 --remaining;
             }
-
+            //prompt to view hand after issuing order
             std::cout << "\n" << p->name() << ", view your hand? (y/n): ";
             char view;
             std::cin >> view;
@@ -676,7 +685,7 @@ void GameEngine::issueOrdersPhase() {
             if (view == 'y') {
                 if (p->hand()) {
                     std::cout << "\n=== " << p->name() << "'s Hand ===\n";
-                    std::cout << *(p->hand()) << "\n";   // relies on operator<<(std::ostream&, const Hand&)
+                    std::cout << *(p->hand()) << "\n";   // relies on overload<<(std::ostream&, const Hand&) from Cards.h
                 } else {
                     std::cout << p->name() << " has no hand.\n";
                 }
@@ -698,13 +707,13 @@ void GameEngine::issueOrdersPhase() {
 
 void GameEngine::executeOrdersPhase() {
     std::cout << "\n=== Execute Orders Phase ===\n";
-
+    // check if there are players
     if (players.empty()) {
         std::cout << "No players in the game.\n";
         return;
     }
     
-    // Reset all players' committed reinforcements and conquered flags at start of next phase
+    // reset all players reinforcements and flags at start of next phase
     for (Player* p : players) {
         if (p) {
             p->resetCommitted();
@@ -713,21 +722,24 @@ void GameEngine::executeOrdersPhase() {
 
     std::cout << "Orders were executed immediately as they were issued.\n";
 
-    // Award cards to players who conquered at least one territory this turn
+    // give cards to players who conquered at least one territory this turn
     std::cout << "\n--- Card Distribution ---\n";
     bool anyCardDrawn = false;
     for (Player* p : players) {
         if (!p) continue;
+        // verify if player conquered a territory this turn
         if (p->hasConqueredThisTurn()) {
             if (!p->hand()) {
                 p->setHand(new Hand());
-            }
+            }   
+            // verify deck exists
             if (deck) {
+                //draw a card from the deck
                 deck->draw(p->hand());
                 std::cout << p->name() << " conquered territory this turn and draws 1 card!\n";
                 anyCardDrawn = true;
             }
-      
+            // reset flag for next turn
             p->setConqueredThisTurn(false);
         }
     }
@@ -737,6 +749,7 @@ void GameEngine::executeOrdersPhase() {
 
     std::cout << "=== End of Execute Orders Phase ===\n";
 }
+
 void GameEngine::mainGameLoop() {
     std::cout << "\n=== Main Game Loop ===\n";
 
@@ -746,6 +759,7 @@ void GameEngine::mainGameLoop() {
         issueOrdersPhase();
         executeOrdersPhase();
 
+        // loose condition
         // remove players with no territories
         for (auto it = players.begin(); it != players.end(); ) {
             Player* p = *it;
