@@ -1,3 +1,4 @@
+#pragma once
 
 #include <vector>
 #include <string>
@@ -10,6 +11,8 @@ class Order;
 class Deck;
 class Card;
 
+class PlayerStrategy;
+
 class Player {
 private:
     std::string*                name_;
@@ -20,6 +23,8 @@ private:
     int*                        committedReinforcements_; // track armies committed during issue phase
     bool*                       conqueredThisTurn_; // track if player conquered a territory this turn
     std::set<Player*>*          diplomaticRelations_; // players you cannot attack this turn
+    PlayerStrategy*             strategy_;   // Strategy pattern: behavior object
+
 
 public:
 
@@ -70,5 +75,9 @@ public:
     bool hasDiplomaticRelation(Player* player) const;
     // call at start of turn
     void clearDiplomaticRelations(); 
+
+        // Strategy pattern for player strategy
+    PlayerStrategy* strategy() const;
+    void setStrategy(PlayerStrategy* s);
 
 };
