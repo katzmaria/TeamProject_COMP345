@@ -341,8 +341,16 @@ void GameEngine::startupPhase() {
     while (true) {
         std::string command = cmdProcessor->getCommand(getState());
 
+        // tournament mode
+        if (command.rfind("tournament", 0) == 0) {
+            // the command should resemble a string like: "tournament -M map1.map map2.map -P aggressive benevolent neutral cheater -G 5 -D 50"
+            // tournament mode requires no user input, so call a method to divert to tournament mode
+            tournamentMode(command);
+            // program terminates after tournament mode
+            break;
+        }
         // loadmap 
-        if (command.rfind("loadmap", 0) == 0) {
+        else if (command.rfind("loadmap", 0) == 0) {
             if (transition("loadmap")) {
                 mapLoaded = true;
             }
@@ -782,4 +790,135 @@ void GameEngine::mainGameLoop() {
             gameOver = true;
         }
     }
+}
+
+// this is the method to control the game once in tournament mode
+void GameEngine::tournamentMode(std::string& command) {
+    // break down the command into its components
+    // this will process the tournament command and make necessary modifications for invalid inputs
+    // save each string in a vector
+    std::stringstream test(command);
+    std::string segment;
+    std::vector<std::string> seglist;
+
+    while(std::getline(test, segment, ' '))
+    {
+      seglist.push_back(segment);
+    }
+
+    int numberOfGames = 0;
+    int maxTurns = 0;
+    std::vector<std::string> maps;
+    std::vector<std::string> strategies;
+    // this is how the loop will know what part of the command it is processing
+    std::string currentFlag = "tournament";
+
+    // loop through the vector and validate each part of the command
+    for (std::string element : seglist) {
+        // change the current flag if a flag is found
+        if (element == "-M") {
+            currentFlag = "-M";
+        }
+        else if (element == "-P") {
+            currentFlag = "-P";
+        }
+        else if (element == "-G") {
+            currentFlag = "-G";
+        }
+        else if (element == "-D") {
+            currentFlag = "-D";
+        }
+        else {
+            // process based on current flag
+            if (currentFlag == "-M") {
+                maps.push_back(element);
+            }
+            else if (currentFlag == "-P") {
+                strategies.push_back(element);
+            }
+            else if (currentFlag == "-G") {
+                try {
+                    numberOfGames = std::stoi(element);
+                }
+                catch (...) {
+                    // invalid input for number of games
+                    numberOfGames = 0;
+                }
+            }
+            else if (currentFlag == "-D") {
+                try {
+                    maxTurns = std::stoi(element);
+                }
+                catch (...) {
+                    // invalid input for max turns
+                    maxTurns = 0;
+                }
+            }
+            
+        }   
+    }
+
+    //print to console the parsed tournament data for verification
+    std::cout << "Tournament Mode Settings:\n";
+    std::cout << "Maps:\n";
+    for (int i = 0; i < maps.size(); ++i) {
+        std::cout << maps[i] << "\n";
+    }
+    std::cout << "Players:\n";
+    for (int i = 0; i < strategies.size(); ++i) {
+        std::cout << strategies[i] << "\n";
+    }
+    std::cout << "Number of Games per Map: " << numberOfGames << "\n";
+    std::cout << "Max Turns per Game: " << maxTurns << "\n";
+
+    // NOTE: THE COMMANDPROCESSOR ALREADY PERFORMED VALIDATION CHECKS, ALL DATA SHOULD BE VALID HERE
+
+    // begin the tournament with the validated data
+
+    // check if there are maps
+    if (maps.empty()) {
+        std::cout << "No maps in the command. Exiting tournament mode.\n";
+        return;
+    }
+
+    // create an array to store the results from each game
+    // this creates a max size 6x6 array that stores 5 maps and 5 games. Note: not all slots may be used
+    std::string results[6][6];
+    // here is what the results array might look like
+    // {{"", "Game1", "Game2", Game3", "Game4"},
+    //  {"map1", "", "", "", ""},
+    //  {"map2", "", "", "", ""}
+    //  {"map3", "", "", "", ""}}
+
+
+    // each map will have "numberOfGames" games played on it
+    for (int i = 0; i < maps.size(); ++i) {
+        // fill in results with the map name
+        results[i + 1][0] = maps[i];
+
+        for (int gameNum = 1; gameNum <= numberOfGames; ++gameNum) {
+            // fill in results with the game number
+            results[0][gameNum] = "Game" + std::to_string(gameNum);
+
+            // create a new game engine for each game
+            GameEngine game;
+            // create the file path for the map
+            std::string mapPath = "maps/" + maps[i];
+            // load the map
+            if (!game.loadingMap(mapPath)) {
+                results[i + 1][gameNum] = "Error loading map";
+                continue;
+            }
+
+            // change the game state to map validated
+            game.setState("mapvalidated");
+
+            // add players with specified strategies
+
+
+        }
+    }
+
+    // when game is over, print the results and save the results to a gamelog.txt file
+
 }

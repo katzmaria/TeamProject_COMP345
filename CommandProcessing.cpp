@@ -5,6 +5,9 @@
 #include "CommandProcessing.h"
 #include <limits>
 #include "LoggingObserver.h"
+#include <sstream>
+#include <vector>
+#include <filesystem>
 
 // 
 // CommandProcessor class implementation
@@ -90,7 +93,15 @@ std::string CommandProcessor::getCommand(const std::string& gameState) {
             baseCommand = commandStr.substr(0, space);
         }
 
-        if (isValid){
+        // if the program wants tournament mode, it needs to be handled differently
+        if (cmd->getCommand().rfind("tournament", 0) == 0) {
+            // a proper tournament command will be given from processtournamentCommand
+            std::string goodCommand = processTournamentCommand(cmd->getCommand());
+            delete cmd;
+            return goodCommand;
+        } 
+
+        else if (isValid){
             // log the effect of the command cmd
             delete cmd;
             return baseCommand;
@@ -183,6 +194,154 @@ std::string CommandProcessor::stringToLog(){
     // for now use the command at the from of the list
     string += commands->back().getCommand();
     return string;
+}
+
+std::string CommandProcessor::processTournamentCommand(const std::string& command) {
+    // this will process the tournament command and make necessary modifications for invalid inputs
+    // save each string in a vector
+    std::stringstream test(command);
+    std::string segment;
+    std::vector<std::string> seglist;
+
+    while(std::getline(test, segment, ' '))
+    {
+      seglist.push_back(segment);
+    }
+
+    int numberOfGames = 0;
+    int maxTurns = 0;
+    std::vector<std::string> maps;
+    std::vector<std::string> strategies;
+    // this is how the loop will know what part of the command it is processing
+    std::string currentFlag = "tournament";
+
+    // loop through the vector and validate each part of the command
+    for (std::string element : seglist) {
+        // change the current flag if a flag is found
+        if (element == "-M") {
+            currentFlag = "-M";
+        }
+        else if (element == "-P") {
+            currentFlag = "-P";
+        }
+        else if (element == "-G") {
+            currentFlag = "-G";
+        }
+        else if (element == "-D") {
+            currentFlag = "-D";
+        }
+        else {
+            // process based on current flag
+            if (currentFlag == "-M") {
+                maps.push_back(element);
+            }
+            else if (currentFlag == "-P") {
+                strategies.push_back(element);
+            }
+            else if (currentFlag == "-G") {
+                try {
+                    numberOfGames = std::stoi(element);
+                }
+                catch (...) {
+                    // invalid input for number of games
+                    numberOfGames = 0;
+                }
+            }
+            else if (currentFlag == "-D") {
+                try {
+                    maxTurns = std::stoi(element);
+                }
+                catch (...) {
+                    // invalid input for max turns
+                    maxTurns = 0;
+                }
+            }
+            
+        }   
+    } 
+
+        // now all the data has been collected, begin validation
+
+        // validate number of turns, must be between 10 and 50
+        if (maxTurns < 10 || maxTurns > 50) {
+            // default to 10 if the user entered an invalid input
+            maxTurns = 10;
+        }
+
+        // validate number of games, must be between 1 and 5
+        if (numberOfGames < 1 || numberOfGames > 5) {
+            // default to 1 if the user entered an invalid input
+            numberOfGames = 1;
+        }
+
+        // validate that each strategy is a valid string
+        for (int i = 0; i < strategies.size(); i++) {
+            std::string strat = strategies[i];
+            if (strat != "aggressive" && strat != "benevolent" && strat != "neutral" && strat != "cheater") {
+                // remove invalid strategy
+                strategies.erase(strategies.begin() + i);
+                // decrement i to account for removed element
+                i--;
+            }
+        }
+
+        // validate list of player strategies, must be between 2 and 4 players
+        if (strategies.size() < 2) {
+            // add "aggressive" players until there are 2 players
+            while (strategies.size() < 2) {
+                strategies.push_back("aggressive");
+            }
+        }
+        else if (strategies.size() > 4) {
+            // remove extra players until there are 4 players
+            while (strategies.size() > 4) {
+                strategies.pop_back();
+            }
+        }
+
+        // makes sure each map is a valid entry 
+        for (int i = 0; i < maps.size(); i++) {
+            std::string mapName = maps[i];
+            std::filesystem::path mapPath = std::filesystem::current_path() / "maps" / mapName;
+
+            // error code to make sure the system doesn't crash
+            std::error_code ec;
+
+            if (!std::filesystem::exists(mapPath, ec) || !std::filesystem::is_regular_file(mapPath, ec)) {
+                // remove invalid map
+                maps.erase(maps.begin() + i);
+                // decrement i to account for removed element
+                i--;
+            }
+        }
+            
+        // validate list of maps, must be at least 1 map
+        if (maps.size() < 1) {
+            // no maps will be included in the command and a tournament will not commence
+        }
+
+        if (maps.size() > 5) {
+            // remove extra maps until there are 5 maps
+            while (maps.size() > 5) {
+                maps.pop_back();
+            }
+        }
+        
+    // all data has been validated, now rebuild the command string
+    std::string newCommand = "tournament ";
+    newCommand += "-M ";
+    for (std::string map : maps) {
+        newCommand += map + " ";
+    }
+    newCommand += "-P ";
+    for (std::string strat : strategies) {
+        newCommand += strat + " ";
+    }
+    newCommand += "-G " + std::to_string(numberOfGames) + " ";
+    newCommand += "-D " + std::to_string(maxTurns);
+
+    // return the new command string
+    return newCommand;
 }
 
 //

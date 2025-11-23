@@ -8,11 +8,12 @@ void testStartupPhase();   // Part 2: Game Startup Phase
 void testMainGameLoop();   // Part 3: Main Game Loop
 void testOrderExecution(); // Part 4: Order Execution
 void testCards();          // Part 5: Cards
-void testLoggingObserver(); // Part 5: Logging Observer
+//void testLoggingObserver(); // Part 5: Logging Observer
 void testOrdersLists();    // Additional: Orders Lists
 void testPlayers();        // Additional: Players
-void testCommandProcessor(); // Additional: Command Processing
+//void testCommandProcessor(); // Additional: Command Processing
 void testGameStates();     // Additional: Game States
+void testTournament();    //Assignment 3 part 2 testing method
 
 int main(int argc, char* argv[]) {
     // Check for command line argument --test
@@ -43,8 +44,8 @@ int main(int argc, char* argv[]) {
         std::cout << "\n=== PART 4: Order Execution ===\n";
         testOrderExecution();
         
-        std::cout << "\n=== PART 5: Logging Observer ===\n";
-        testLoggingObserver();
+        //std::cout << "\n=== PART 5: Logging Observer ===\n";
+        //testLoggingObserver();
         
         std::cout << "\n========================================\n";
         std::cout << "All Tests Complete\n";
@@ -59,9 +60,8 @@ int main(int argc, char* argv[]) {
         std::cout << "1. Test Game Startup Phase (Part 2)\n";
         std::cout << "2. Test Order Execution (Part 4)\n";
         std::cout << "3. Play Full Game\n";
-        std::cout << "4. Test Logging Observer\n";
-        std::cout << "5. Test CommandProcessing\n";
-        std::cout << "Enter choice (1-3): ";
+        std::cout << "4. Test Tournament Mode\n";
+        std::cout << "Enter choice (1-5): ";
         
         int choice;
         std::cin >> choice;
@@ -79,15 +79,11 @@ int main(int argc, char* argv[]) {
                 std::cout << "\n=== Starting Full Game ===\n";
                 testMainGameLoop();
                 break;
-
-            case 4:
-                testLoggingObserver();
-                break;
-
-            case 5:
-                testCommandProcessor();
-                break;
                 
+            case 4:
+                testTournament();
+                break;
+
             default:
                 std::cout << "Invalid choice.\n";
                 break;

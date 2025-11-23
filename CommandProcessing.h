@@ -40,6 +40,7 @@ class CommandProcessor : public ILoggable, public Subject {
         virtual std::string getCommand(const std::string& gameState);
         bool validate(Command* cmd, const std::string& currentState);
         std::string stringToLog();
+        std::string processTournamentCommand(const std::string& command);
 };
 
 class FileLineReader {

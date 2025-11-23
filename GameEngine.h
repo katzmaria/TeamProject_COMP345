@@ -37,5 +37,7 @@ class GameEngine {
         void reinforcementPhase();
         void issueOrdersPhase();
         void executeOrdersPhase();
+
+        void tournamentMode(std::string& command);
 };
 
