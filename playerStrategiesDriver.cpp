@@ -1,4 +1,4 @@
-#include "PlayerStrategies.h"
+#include "playerStrategies.h"
 #include "Player.h"
 #include "Map.h"
 #include "Orders.h"

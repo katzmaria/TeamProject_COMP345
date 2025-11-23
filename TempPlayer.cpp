@@ -6,7 +6,7 @@
 #include "Orders.h" 
 #include "Map.h"   
 #include "Cards.h"   
-#include "PlayerStrategies.h"
+#include "playerStrategies.h"
 
 
 //default const
