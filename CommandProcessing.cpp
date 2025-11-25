@@ -98,7 +98,7 @@ std::string CommandProcessor::getCommand(const std::string& gameState) {
             // a proper tournament command will be given from processtournamentCommand
             std::string goodCommand = processTournamentCommand(cmd->getCommand());
             delete cmd;
-            return goodCommand;
+            return goodCommand.empty() ? std::string("invalid") : goodCommand;
         } 
 
         else if (isValid){
@@ -137,8 +137,11 @@ bool CommandProcessor::validate(Command* cmd, const std::string& currentState) {
         if (baseCommand == "loadmap") {
             isValid = true;
             effectMsg = "Loading map file: " + argument;
+        } else if (baseCommand == "tournament") {
+            isValid = true;
+            effectMsg = "Entering tournament mode with command: " + commandStr;
         } else {
-            effectMsg = "Invalid command in start state. Expected 'loadmap <filename>'";
+            effectMsg = "Invalid command in start state. Expected 'loadmap <filename>' or 'tournament <args>'";
         }
     }
     else if (currentState == "maploaded") {
@@ -316,8 +319,8 @@ std::string CommandProcessor::processTournamentCommand(const std::string& comman
         }
             
         // validate list of maps, must be at least 1 map
-        if (maps.size() < 1) {
-            // no maps will be included in the command and a tournament will not commence
+        if (maps.empty()) {
+            return "";
         }
 
         if (maps.size() > 5) {

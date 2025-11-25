@@ -1,1 +1,21 @@
 
+Command's Effect: Entering tournament mode with command: tournament -M 002_I72_X-29.map -P aggressive benevolent cheater neutral -G 2 -D 15
+Command's Effect: Tournament mode:
+M: 002_I72_X-29.map
+P: Aggressive, Benevolent, Cheater, Neutral
+G: 2
+D: 15
+Results:
+Map           Game 1        Game 2        
+002_I72_X-29.mapCheater       Cheater       
+
+Command's Effect: Entering tournament mode with command: tournament -M 002_I72_X-29.map -P aggressive benevolent cheater neutral -G 2 -D 15
+Command's Effect: Tournament mode:
+M: 002_I72_X-29.map
+P: Aggressive, Benevolent, Cheater, Neutral
+G: 2
+D: 15
+Results:
+Map           Game 1        Game 2        
+002_I72_X-29.mapCheater       Cheater       
+

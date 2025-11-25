@@ -38,6 +38,6 @@ class GameEngine {
         void issueOrdersPhase();
         void executeOrdersPhase();
 
-        void tournamentMode(std::string& command);
+        void tournamentMode(const std::string& command);
 };
 

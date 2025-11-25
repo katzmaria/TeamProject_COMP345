@@ -4,6 +4,7 @@
 #include "Cards.h"
 #include "Orders.h"
 #include "Map.h"
+#include "playerStrategies.h"
 
 #include <string>
 #include <iostream>
@@ -13,6 +14,46 @@
 #include <ctime>
 #include <random>
 #include <filesystem>
+#include <chrono>
+#include <iomanip>
+#include <cctype>
+
+namespace {
+std::string toLowerCopy(const std::string& value) {
+    std::string result = value;
+    std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+    });
+    return result;
+}
+
+std::string titleCaseCopy(const std::string& value) {
+    if (value.empty()) {
+        return value;
+    }
+    std::string lower = toLowerCopy(value);
+    lower[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(lower[0])));
+    return lower;
+}
+
+PlayerStrategy* createStrategyFromCode(const std::string& code) {
+    const std::string lowered = toLowerCopy(code);
+    if (lowered == "aggressive") {
+        return new AggressivePlayerStrategy();
+    }
+    if (lowered == "benevolent") {
+        return new BenevolentPlayerStrategy();
+    }
+    if (lowered == "neutral") {
+        return new NeutralPlayerStrategy();
+    }
+    if (lowered == "cheater") {
+        return new CheaterPlayerStrategy();
+    }
+    // fallback to neutral to keep the game running
+    return new NeutralPlayerStrategy();
+}
+}
 
 // basic GameEngine methods 
 
@@ -793,132 +834,284 @@ void GameEngine::mainGameLoop() {
 }
 
 // this is the method to control the game once in tournament mode
-void GameEngine::tournamentMode(std::string& command) {
-    // break down the command into its components
-    // this will process the tournament command and make necessary modifications for invalid inputs
-    // save each string in a vector
-    std::stringstream test(command);
-    std::string segment;
-    std::vector<std::string> seglist;
-
-    while(std::getline(test, segment, ' '))
-    {
-      seglist.push_back(segment);
+void GameEngine::tournamentMode(const std::string& command) {
+    std::stringstream tokenizer(command);
+    std::vector<std::string> tokens;
+    std::string token;
+    while (tokenizer >> token) {
+        tokens.push_back(token);
     }
 
     int numberOfGames = 0;
     int maxTurns = 0;
     std::vector<std::string> maps;
     std::vector<std::string> strategies;
-    // this is how the loop will know what part of the command it is processing
-    std::string currentFlag = "tournament";
+    std::string currentFlag;
 
-    // loop through the vector and validate each part of the command
-    for (std::string element : seglist) {
-        // change the current flag if a flag is found
-        if (element == "-M") {
-            currentFlag = "-M";
+    for (const std::string& element : tokens) {
+        if (element == "tournament") {
+            currentFlag = element;
+            continue;
         }
-        else if (element == "-P") {
-            currentFlag = "-P";
+
+        if (element == "-M" || element == "-P" || element == "-G" || element == "-D") {
+            currentFlag = element;
+            continue;
         }
-        else if (element == "-G") {
-            currentFlag = "-G";
+
+        if (currentFlag == "-M") {
+            maps.push_back(element);
+        } else if (currentFlag == "-P") {
+            strategies.push_back(toLowerCopy(element));
+        } else if (currentFlag == "-G") {
+            try {
+                numberOfGames = std::stoi(element);
+            } catch (...) {
+                numberOfGames = 0;
+            }
+        } else if (currentFlag == "-D") {
+            try {
+                maxTurns = std::stoi(element);
+            } catch (...) {
+                maxTurns = 0;
+            }
         }
-        else if (element == "-D") {
-            currentFlag = "-D";
-        }
-        else {
-            // process based on current flag
-            if (currentFlag == "-M") {
-                maps.push_back(element);
-            }
-            else if (currentFlag == "-P") {
-                strategies.push_back(element);
-            }
-            else if (currentFlag == "-G") {
-                try {
-                    numberOfGames = std::stoi(element);
-                }
-                catch (...) {
-                    // invalid input for number of games
-                    numberOfGames = 0;
-                }
-            }
-            else if (currentFlag == "-D") {
-                try {
-                    maxTurns = std::stoi(element);
-                }
-                catch (...) {
-                    // invalid input for max turns
-                    maxTurns = 0;
-                }
-            }
-            
-        }   
     }
 
-    //print to console the parsed tournament data for verification
-    std::cout << "Tournament Mode Settings:\n";
-    std::cout << "Maps:\n";
-    for (int i = 0; i < maps.size(); ++i) {
-        std::cout << maps[i] << "\n";
+    if (maxTurns < 10 || maxTurns > 50) {
+        maxTurns = 10;
     }
-    std::cout << "Players:\n";
-    for (int i = 0; i < strategies.size(); ++i) {
-        std::cout << strategies[i] << "\n";
+    if (numberOfGames < 1 || numberOfGames > 5) {
+        numberOfGames = 1;
     }
-    std::cout << "Number of Games per Map: " << numberOfGames << "\n";
-    std::cout << "Max Turns per Game: " << maxTurns << "\n";
 
-    // NOTE: THE COMMANDPROCESSOR ALREADY PERFORMED VALIDATION CHECKS, ALL DATA SHOULD BE VALID HERE
+    std::vector<std::string> validatedStrategies;
+    for (const std::string& code : strategies) {
+        const std::string lowered = toLowerCopy(code);
+        if (lowered == "aggressive" || lowered == "benevolent" || lowered == "neutral" || lowered == "cheater") {
+            validatedStrategies.push_back(lowered);
+        }
+    }
+    strategies.swap(validatedStrategies);
 
-    // begin the tournament with the validated data
+    while (strategies.size() < 2) {
+        strategies.push_back("aggressive");
+    }
+    while (strategies.size() > 4) {
+        strategies.pop_back();
+    }
 
-    // check if there are maps
+    for (auto it = maps.begin(); it != maps.end();) {
+        const std::filesystem::path mapPath = std::filesystem::current_path() / "maps" / *it;
+        std::error_code ec;
+        if (!std::filesystem::exists(mapPath, ec) || !std::filesystem::is_regular_file(mapPath, ec)) {
+            it = maps.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    if (maps.size() > 5) {
+        maps.resize(5);
+    }
+
     if (maps.empty()) {
-        std::cout << "No maps in the command. Exiting tournament mode.\n";
+        std::cout << "No valid maps supplied. Exiting tournament mode.\n";
         return;
     }
 
-    // create an array to store the results from each game
-    // this creates a max size 6x6 array that stores 5 maps and 5 games. Note: not all slots may be used
-    std::string results[6][6];
-    // here is what the results array might look like
-    // {{"", "Game1", "Game2", Game3", "Game4"},
-    //  {"map1", "", "", "", ""},
-    //  {"map2", "", "", "", ""}
-    //  {"map3", "", "", "", ""}}
+    const std::size_t mapCount = maps.size();
+    const std::size_t gameCount = static_cast<std::size_t>(numberOfGames);
+    std::vector<std::vector<std::string>> results(mapCount + 1, std::vector<std::string>(gameCount + 1, ""));
+    results[0][0] = "Map";
+    for (std::size_t g = 0; g < gameCount; ++g) {
+        results[0][g + 1] = "Game " + std::to_string(g + 1);
+    }
+    for (std::size_t m = 0; m < mapCount; ++m) {
+        results[m + 1][0] = maps[m];
+    }
 
+    std::mt19937 rng(static_cast<unsigned>(
+        std::chrono::high_resolution_clock::now().time_since_epoch().count()));
 
-    // each map will have "numberOfGames" games played on it
-    for (int i = 0; i < maps.size(); ++i) {
-        // fill in results with the map name
-        results[i + 1][0] = maps[i];
+    auto runSingleGame = [&](const std::string& mapName, int gameIndex) -> std::string {
+        GameEngine game;
+        const std::string mapPath = "maps/" + mapName;
+        if (!game.loadingMap(mapPath)) {
+            return "MapError";
+        }
 
-        for (int gameNum = 1; gameNum <= numberOfGames; ++gameNum) {
-            // fill in results with the game number
-            results[0][gameNum] = "Game" + std::to_string(gameNum);
+        game.setState("mapvalidated");
 
-            // create a new game engine for each game
-            GameEngine game;
-            // create the file path for the map
-            std::string mapPath = "maps/" + maps[i];
-            // load the map
-            if (!game.loadingMap(mapPath)) {
-                results[i + 1][gameNum] = "Error loading map";
-                continue;
+        int playerIndex = 1;
+        for (const std::string& code : strategies) {
+            Player* player = new Player("Player" + std::to_string(playerIndex) + "-" + titleCaseCopy(code));
+            player->setStrategy(createStrategyFromCode(code));
+            player->setOrders(new OrdersList());
+            player->setHand(new Hand());
+            player->setReinforcementPool(0);
+            player->resetCommitted();
+            player->setConqueredThisTurn(false);
+            game.players.push_back(player);
+            ++playerIndex;
+        }
+
+        std::cout << "\n=== Tournament Game " << gameIndex
+                  << " on " << mapName << " ===\n";
+
+        if (game.players.empty() || !game.m_map) {
+            return "Draw";
+        }
+
+        std::shuffle(game.players.begin(), game.players.end(), rng);
+
+        std::vector<Territory*> territories = game.m_map->getTerritories();
+        if (territories.empty()) {
+            return "MapError";
+        }
+        std::shuffle(territories.begin(), territories.end(), rng);
+
+        for (Territory* territory : territories) {
+            territory->owner = nullptr;
+            territory->armies = 0;
+        }
+
+        for (Player* player : game.players) {
+            player->addReinforcements(50);
+            player->resetCommitted();
+        }
+
+        for (std::size_t i = 0; i < territories.size(); ++i) {
+            Territory* territory = territories[i];
+            Player* owner = game.players[i % game.players.size()];
+            territory->owner = owner;
+            territory->armies = 3;
+            owner->addTerritory(territory);
+        }
+
+        for (Player* player : game.players) {
+            player->setConqueredThisTurn(false);
+        }
+
+        for (int turn = 1; turn <= maxTurns && game.players.size() > 1; ++turn) {
+            std::cout << "\n[Game " << gameIndex << "] Turn " << turn << "\n";
+            game.reinforcementPhase();
+
+            for (Player* player : game.players) {
+                if (!player) {
+                    continue;
+                }
+                const auto* terrs = player->territories();
+                if (!terrs || terrs->empty()) {
+                    continue;
+                }
+
+                int safetyCounter = 0;
+                while (player->getAvailableReinforcements() > 0) {
+                    Order* deployOrder = player->issueOrder("deploy", game.deck, &game.players);
+                    if (!deployOrder) {
+                        break;
+                    }
+                    if (++safetyCounter > 100) {
+                        break;
+                    }
+                }
+
+                player->issueOrder("advance", game.deck, &game.players);
             }
 
-            // change the game state to map validated
-            game.setState("mapvalidated");
+            for (Player* player : game.players) {
+                player->resetCommitted();
+                player->setConqueredThisTurn(false);
+            }
 
-            // add players with specified strategies
+            for (auto it = game.players.begin(); it != game.players.end();) {
+                Player* p = *it;
+                const auto* terrs = p->territories();
+                if (!terrs || terrs->empty()) {
+                    delete p;
+                    it = game.players.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+        }
 
+        std::string winner = "Draw";
+        if (game.players.size() == 1) {
+            Player* winningPlayer = game.players.front();
+            if (winningPlayer && winningPlayer->strategy()) {
+                winner = winningPlayer->strategy()->name();
+            } else if (winningPlayer) {
+                winner = winningPlayer->name();
+            }
+        }
 
+        if (game.m_map) {
+            for (Territory* territory : game.m_map->getTerritories()) {
+                territory->owner = nullptr;
+            }
+        }
+
+        for (Player* player : game.players) {
+            delete player;
+        }
+        game.players.clear();
+
+        if (game.m_map) {
+            delete game.m_map;
+            game.m_map = nullptr;
+        }
+
+        return winner;
+    };
+
+    for (std::size_t mapIndex = 0; mapIndex < mapCount; ++mapIndex) {
+        for (int gameNumber = 1; gameNumber <= numberOfGames; ++gameNumber) {
+            results[mapIndex + 1][gameNumber] = runSingleGame(maps[mapIndex], gameNumber);
         }
     }
 
-    // when game is over, print the results and save the results to a gamelog.txt file
+    auto joinList = [](const std::vector<std::string>& values, bool prettify = false) {
+        std::ostringstream oss;
+        for (std::size_t i = 0; i < values.size(); ++i) {
+            if (i > 0) {
+                oss << ", ";
+            }
+            if (prettify) {
+                oss << titleCaseCopy(values[i]);
+            } else {
+                oss << values[i];
+            }
+        }
+        return oss.str();
+    };
 
+    std::ostringstream summary;
+    summary << "Tournament mode:\n";
+    summary << "M: " << joinList(maps) << "\n";
+    summary << "P: " << joinList(strategies, true) << "\n";
+    summary << "G: " << numberOfGames << "\n";
+    summary << "D: " << maxTurns << "\n";
+    summary << "Results:\n";
+
+    const int columnWidth = 14;
+    summary << std::left;
+    for (const auto& row : results) {
+        for (const auto& cell : row) {
+            const std::string value = cell.empty() ? "-" : cell;
+            summary << std::setw(columnWidth) << value;
+        }
+        summary << "\n";
+    }
+    summary << std::right;
+
+    const std::string summaryText = summary.str();
+    std::cout << summaryText;
+
+    Command logCommand("tournament");
+    logObserver observer;
+    logCommand.attach(observer);
+    logCommand.saveEffect(summaryText);
+    logCommand.detach(observer);
 }
