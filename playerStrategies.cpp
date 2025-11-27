@@ -569,16 +569,16 @@ Order* HumanPlayerStrategy::issueOrder(
     return nullptr;
 }
 
-// ========================
-// AggressivePlayerStrategy
-// ========================
+// aggressive player strategy implementation
 AggressivePlayerStrategy::AggressivePlayerStrategy() {
     *name_ = "Aggressive";
 }
 
+// copy constructor
 AggressivePlayerStrategy::AggressivePlayerStrategy(const AggressivePlayerStrategy& other)
     : PlayerStrategy(other) {}
 
+// copy assignment
 AggressivePlayerStrategy& AggressivePlayerStrategy::operator=(const AggressivePlayerStrategy& other) {
     if (this != &other) {
         PlayerStrategy::operator=(other);
@@ -586,6 +586,7 @@ AggressivePlayerStrategy& AggressivePlayerStrategy::operator=(const AggressivePl
     return *this;
 }
 
+// destructor
 AggressivePlayerStrategy::~AggressivePlayerStrategy() = default;
 
 PlayerStrategy* AggressivePlayerStrategy::clone() const {
@@ -607,7 +608,7 @@ std::vector<Territory*> AggressivePlayerStrategy::toAttack(Player* player) const
     const auto* terrs = player->territories();
     if (!terrs) return result;
 
-    // choose enemy neighbors of strongest territory
+    //Find strongest territory and return enemy neighbors
     if (terrs->empty()) return result;
     Territory* strongest = *std::max_element(terrs->begin(), terrs->end(), cmpArmiesAsc);
 
@@ -619,6 +620,7 @@ std::vector<Territory*> AggressivePlayerStrategy::toAttack(Player* player) const
     return result;
 }
 
+// issue order reimplementation
 Order* AggressivePlayerStrategy::issueOrder(
     Player* player,
     const std::string& kind,
@@ -642,7 +644,7 @@ Order* AggressivePlayerStrategy::issueOrder(
 
     Territory* strongest = *std::max_element(terrs->begin(), terrs->end(), cmpArmiesAsc);
 
-    // ===== deploy: dump everything on strongest =====
+    // this deploy method deploys all available reinforcements to strongest territory
     if (kind == "deploy") {
         int available = player->getAvailableReinforcements();
         if (available <= 0) {
@@ -661,7 +663,7 @@ Order* AggressivePlayerStrategy::issueOrder(
         return created;
     }
 
-    // ===== advance: always attack from strongest towards enemies if possible =====
+    //advance method attacks from strongest territory to weakest adjacent enememy territory
     if (kind == "advance") {
         // pick enemy neighbor with weakest armies
         Territory* targetEnemy = nullptr;
@@ -694,14 +696,12 @@ Order* AggressivePlayerStrategy::issueOrder(
         return created;
     }
 
-    // For simplicity, aggressive strategy ignores card-based kinds here
+    // ignore other orders
     std::cout << "[Aggressive] Ignoring non-deploy/advance order kind: " << kind << "\n";
     return nullptr;
 }
 
-// ========================
-// BenevolentPlayerStrategy
-// ========================
+// benevolent player strategy implementation
 BenevolentPlayerStrategy::BenevolentPlayerStrategy() {
     *name_ = "Benevolent";
 }
@@ -755,7 +755,7 @@ Order* BenevolentPlayerStrategy::issueOrder(
         return nullptr;
     }
 
-    // ===== deploy: put everything on weakest =====
+    // put everyyhing on weakest 
     if (kind == "deploy") {
         int available = player->getAvailableReinforcements();
         if (available <= 0) {
@@ -775,9 +775,9 @@ Order* BenevolentPlayerStrategy::issueOrder(
         return created;
     }
 
-    // ===== advance: move from stronger owned territory to weaker owned neighbor =====
+    // move armies from strongest to weakest
     if (kind == "advance") {
-        // find pair (source, target) both owned by player where source has more armies than target
+        // find neighbor with biggest army difference
         Territory* source = nullptr;
         Territory* target = nullptr;
 
@@ -817,13 +817,12 @@ Order* BenevolentPlayerStrategy::issueOrder(
     return nullptr;
 }
 
-// ========================
-// NeutralPlayerStrategy
-// ========================
+
+// neutral player strategy implementation
 NeutralPlayerStrategy::NeutralPlayerStrategy() {
     *name_ = "Neutral";
 }
-
+// copy constructor
 NeutralPlayerStrategy::NeutralPlayerStrategy(const NeutralPlayerStrategy& other)
     : PlayerStrategy(other) {}
 
@@ -833,13 +832,13 @@ NeutralPlayerStrategy& NeutralPlayerStrategy::operator=(const NeutralPlayerStrat
     }
     return *this;
 }
-
+// destructor
 NeutralPlayerStrategy::~NeutralPlayerStrategy() = default;
 
 PlayerStrategy* NeutralPlayerStrategy::clone() const {
     return new NeutralPlayerStrategy(*this);
 }
-
+// never defends or attacks
 std::vector<Territory*> NeutralPlayerStrategy::toDefend(Player* /*player*/) const {
     return {};
 }
@@ -847,7 +846,7 @@ std::vector<Territory*> NeutralPlayerStrategy::toDefend(Player* /*player*/) cons
 std::vector<Territory*> NeutralPlayerStrategy::toAttack(Player* /*player*/) const {
     return {};
 }
-
+// does literally nothing
 Order* NeutralPlayerStrategy::issueOrder(
     Player* player,
     const std::string& kind,
@@ -863,13 +862,13 @@ Order* NeutralPlayerStrategy::issueOrder(
     return nullptr;
 }
 
-// ========================
-// CheaterPlayerStrategy
-// ========================
+
+// cheater player strategy implementation
 CheaterPlayerStrategy::CheaterPlayerStrategy() {
     *name_ = "Cheater";
 }
 
+// copy constructor
 CheaterPlayerStrategy::CheaterPlayerStrategy(const CheaterPlayerStrategy& other)
     : PlayerStrategy(other) {}
 
@@ -880,12 +879,16 @@ CheaterPlayerStrategy& CheaterPlayerStrategy::operator=(const CheaterPlayerStrat
     return *this;
 }
 
+
+// destructor
 CheaterPlayerStrategy::~CheaterPlayerStrategy() = default;
 
 PlayerStrategy* CheaterPlayerStrategy::clone() const {
     return new CheaterPlayerStrategy(*this);
 }
 
+
+// cheater defends all its territories
 std::vector<Territory*> CheaterPlayerStrategy::toDefend(Player* player) const {
     std::vector<Territory*> result;
     const auto* terrs = player->territories();
@@ -894,6 +897,7 @@ std::vector<Territory*> CheaterPlayerStrategy::toDefend(Player* player) const {
     return result;
 }
 
+// cheater attacks all adjacent enemy territories if they chose to attack
 std::vector<Territory*> CheaterPlayerStrategy::toAttack(Player* player) const {
     std::vector<Territory*> result;
     const auto* terrs = player->territories();
@@ -911,6 +915,8 @@ std::vector<Territory*> CheaterPlayerStrategy::toAttack(Player* player) const {
     return result;
 }
 
+// performs the cheat itself
+// conquers all adjacent enemy territories 
 void CheaterPlayerStrategy::performCheat(Player* player) {
     std::vector<Territory*> targets = toAttack(player);
 
@@ -927,6 +933,7 @@ void CheaterPlayerStrategy::performCheat(Player* player) {
     }
 }
 
+// issue order reimplementation for cheater
 Order* CheaterPlayerStrategy::issueOrder(
     Player* player,
     const std::string& kind,
@@ -938,7 +945,7 @@ Order* CheaterPlayerStrategy::issueOrder(
     (void)allPlayers;
 
     std::cout << "[Cheater] Performing cheating conquest.\n";
+    // perform the cheat
     performCheat(player);
-    // No actual Order object is created in this simple implementation
     return nullptr;
 }
