@@ -8,15 +8,17 @@
 #include <iostream>
 #include <set>
 
-// ========================
-// PlayerStrategy (base)
-// ========================
+// PlayerStrategy (base stratetgy)
+
+//default constructor 
 PlayerStrategy::PlayerStrategy()
     : name_(new std::string("UnnamedStrategy")) {}
 
+    //copy const 
 PlayerStrategy::PlayerStrategy(const PlayerStrategy& other)
     : name_(new std::string(*other.name_)) {}
 
+    //copy ass - deep copy name from other 
 PlayerStrategy& PlayerStrategy::operator=(const PlayerStrategy& other) {
     if (this != &other) {
         delete name_;
@@ -24,11 +26,11 @@ PlayerStrategy& PlayerStrategy::operator=(const PlayerStrategy& other) {
     }
     return *this;
 }
-
+//destructor
 PlayerStrategy::~PlayerStrategy() {
     delete name_;
 }
-
+//getter for strat name 
 const std::string& PlayerStrategy::name() const {
     return *name_;
 }
@@ -42,29 +44,29 @@ static bool cmpArmiesDesc(const Territory* a, const Territory* b) {
     return a->armies > b->armies;
 }
 
-// ========================
 // HumanPlayerStrategy
-// ========================
 HumanPlayerStrategy::HumanPlayerStrategy() {
     *name_ = "Human";
 }
-
+//copy const
 HumanPlayerStrategy::HumanPlayerStrategy(const HumanPlayerStrategy& other)
     : PlayerStrategy(other) {}
 
+//copy assignemnt
 HumanPlayerStrategy& HumanPlayerStrategy::operator=(const HumanPlayerStrategy& other) {
     if (this != &other) {
         PlayerStrategy::operator=(other);
     }
     return *this;
 }
-
+//destructor 
 HumanPlayerStrategy::~HumanPlayerStrategy() = default;
 
+//deep copy clone
 PlayerStrategy* HumanPlayerStrategy::clone() const {
     return new HumanPlayerStrategy(*this);
 }
-
+// returns first half of owned terrs
 std::vector<Territory*> HumanPlayerStrategy::toDefend(Player* player) const {
     std::vector<Territory*> result;
     const auto* terrs = player->territories();
@@ -75,6 +77,7 @@ std::vector<Territory*> HumanPlayerStrategy::toDefend(Player* player) const {
     return result;
 }
 
+//returns second half of owned terrs 
 std::vector<Territory*> HumanPlayerStrategy::toAttack(Player* player) const {
     std::vector<Territory*> result;
     const auto* terrs = player->territories();
@@ -85,7 +88,7 @@ std::vector<Territory*> HumanPlayerStrategy::toAttack(Player* player) const {
     return result;
 }
 
-// This is basically your old Player::issueOrder, moved here and adapted to use Player*
+// This is old Player::issueOrder, moved here and adapted to use Player*
 Order* HumanPlayerStrategy::issueOrder(
     Player* player,
     const std::string& kind,
@@ -99,7 +102,8 @@ Order* HumanPlayerStrategy::issueOrder(
         player->setOrders(ol);
     }
 
-    // ==================== DEPLOY ====================
+    // DEPLOY -select a certain terr and number of armies to deploy to it
+    //ensure there are enough armies in reinforcement pool
     if (kind == "deploy") {
         int available = player->getAvailableReinforcements();
         if (available <= 0) {
@@ -112,7 +116,7 @@ Order* HumanPlayerStrategy::issueOrder(
             std::cout << player->name() << " has no territories to deploy to.\n";
             return nullptr;
         }
-
+        //ask where to deploy
         std::cout << "\nDeploy order for " << player->name() << "\n";
         std::cout << "Available reinforcements: " << available << "\n";
         std::cout << "Select a territory index:\n";
@@ -127,7 +131,7 @@ Order* HumanPlayerStrategy::issueOrder(
             std::cout << "Invalid territory index.\n";
             return nullptr;
         }
-
+//how many to deploy
         int amount;
         std::cout << "How many armies to deploy? (1.." << available << "): ";
         std::cin >> amount;
@@ -138,6 +142,7 @@ Order* HumanPlayerStrategy::issueOrder(
 
         Territory* target = terrs->at(idx);
 
+        //create and exceute order
         Order* created = new Deploy(player, target, amount);
         ol->add(created);
 
@@ -152,7 +157,9 @@ Order* HumanPlayerStrategy::issueOrder(
         return created;
     }
 
-    // ==================== ADVANCE ====================
+    //  ADVANCE 
+    //pick source and target terrs and number of armies
+    //to move/attack with
     if (kind == "advance") {
         const auto* terrs = player->territories();
         if (!terrs || terrs->empty()) {
@@ -215,6 +222,7 @@ Order* HumanPlayerStrategy::issueOrder(
             return nullptr;
         }
 
+        //clarify if move or attack
         if (target->owner == player) {
             std::cout << "→ This will MOVE " << amount << " armies to your own territory (reinforcement)\n";
         } else {
@@ -232,7 +240,9 @@ Order* HumanPlayerStrategy::issueOrder(
         return created;
     }
 
-    // ==================== AIRLIFT ====================
+    //  AIRLIFT 
+    //check fro airlift card 
+    //pick source and target terrs and number of armies to airlift 
     if (kind == "airlift") {
         Hand* hand = player->hand();
         if (!hand) {
@@ -247,6 +257,7 @@ Order* HumanPlayerStrategy::issueOrder(
                 break;
             }
         }
+        //valiadte that has card
         if (!hasCard) {
             std::cout << "You don't have an airlift card!\n";
             return nullptr;
@@ -297,6 +308,8 @@ Order* HumanPlayerStrategy::issueOrder(
             return nullptr;
         }
 
+        //return airlift card to deck after use
+
         Card* usedCard = nullptr;
         for (Card* c : hand->getCards()) {
             if (c->getType() == "airlift") {
@@ -324,7 +337,7 @@ Order* HumanPlayerStrategy::issueOrder(
         return created;
     }
 
-    // ==================== BOMB ====================
+    //  BOMB
     if (kind == "bomb") {
         Hand* hand = player->hand();
         if (!hand) {
@@ -415,7 +428,8 @@ Order* HumanPlayerStrategy::issueOrder(
         return created;
     }
 
-    // ==================== BLOCKADE ====================
+    //  BLOCKADE 
+    //select a terr you own and triple its armies , make it neutral
     if (kind == "blockade") {
         Hand* hand = player->hand();
         if (!hand) {
@@ -485,7 +499,8 @@ Order* HumanPlayerStrategy::issueOrder(
         return created;
     }
 
-    // ==================== NEGOTIATE ====================
+    //  NEGOTIATE 
+    //build list of other players to negotiate with
     if (kind == "negotiate") {
         Hand* hand = player->hand();
         if (!hand) {
@@ -589,10 +604,12 @@ AggressivePlayerStrategy& AggressivePlayerStrategy::operator=(const AggressivePl
 // destructor
 AggressivePlayerStrategy::~AggressivePlayerStrategy() = default;
 
+//clone deep copy
 PlayerStrategy* AggressivePlayerStrategy::clone() const {
     return new AggressivePlayerStrategy(*this);
 }
 
+// return owned terrs sorted by descending armies
 std::vector<Territory*> AggressivePlayerStrategy::toDefend(Player* player) const {
     std::vector<Territory*> result;
     const auto* terrs = player->territories();
@@ -602,7 +619,7 @@ std::vector<Territory*> AggressivePlayerStrategy::toDefend(Player* player) const
     std::sort(result.begin(), result.end(), cmpArmiesDesc);
     return result;
 }
-
+//returns enemy neighbors of strongest terr
 std::vector<Territory*> AggressivePlayerStrategy::toAttack(Player* player) const {
     std::vector<Territory*> result;
     const auto* terrs = player->territories();
@@ -621,6 +638,7 @@ std::vector<Territory*> AggressivePlayerStrategy::toAttack(Player* player) const
 }
 
 // issue order reimplementation
+//only deoploys and advances armies from strongest terr
 Order* AggressivePlayerStrategy::issueOrder(
     Player* player,
     const std::string& kind,
@@ -680,6 +698,7 @@ Order* AggressivePlayerStrategy::issueOrder(
             return nullptr;
         }
 
+        //move all but one to leave soome defense 
         int amount = strongest->armies - 1;
         if (amount <= 0) {
             std::cout << "[Aggressive] Strongest territory has no spare armies.\n";
@@ -721,7 +740,7 @@ BenevolentPlayerStrategy::~BenevolentPlayerStrategy() = default;
 PlayerStrategy* BenevolentPlayerStrategy::clone() const {
     return new BenevolentPlayerStrategy(*this);
 }
-
+//returns owned terrs sroteed weakest to strongest 
 std::vector<Territory*> BenevolentPlayerStrategy::toDefend(Player* player) const {
     std::vector<Territory*> result;
     const auto* terrs = player->territories();
@@ -737,6 +756,7 @@ std::vector<Territory*> BenevolentPlayerStrategy::toAttack(Player* /*player*/) c
     return {};
 }
 
+//can only deploy and redistribute armies from its own terrs
 Order* BenevolentPlayerStrategy::issueOrder(
     Player* player,
     const std::string& kind,
@@ -775,12 +795,13 @@ Order* BenevolentPlayerStrategy::issueOrder(
         return created;
     }
 
-    // move armies from strongest to weakest
+    // move armies from strongest to weakest terr
     if (kind == "advance") {
         // find neighbor with biggest army difference
         Territory* source = nullptr;
         Territory* target = nullptr;
 
+        // find source and target pair to move armies from most to least defended
         for (Territory* t : *terrs) {
             for (Territory* n : t->neighbors) {
                 if (n->owner == player && t->armies > n->armies) {
@@ -797,6 +818,7 @@ Order* BenevolentPlayerStrategy::issueOrder(
             return nullptr;
         }
 
+        //move half the armies from source to target
         int amount = (source->armies) / 2;
         if (amount <= 0) {
             std::cout << "[Benevolent] Source has too few armies.\n";
@@ -888,7 +910,7 @@ PlayerStrategy* CheaterPlayerStrategy::clone() const {
 }
 
 
-// cheater defends all its territories
+// cheater defends all its territories without special order
 std::vector<Territory*> CheaterPlayerStrategy::toDefend(Player* player) const {
     std::vector<Territory*> result;
     const auto* terrs = player->territories();
@@ -897,7 +919,7 @@ std::vector<Territory*> CheaterPlayerStrategy::toDefend(Player* player) const {
     return result;
 }
 
-// cheater attacks all adjacent enemy territories if they chose to attack
+// cheater attacks and automatically wins all adjacent enemy territories 
 std::vector<Territory*> CheaterPlayerStrategy::toAttack(Player* player) const {
     std::vector<Territory*> result;
     const auto* terrs = player->territories();
@@ -934,6 +956,7 @@ void CheaterPlayerStrategy::performCheat(Player* player) {
 }
 
 // issue order reimplementation for cheater
+//just performs the cheat 
 Order* CheaterPlayerStrategy::issueOrder(
     Player* player,
     const std::string& kind,

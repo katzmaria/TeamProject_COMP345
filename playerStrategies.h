@@ -9,24 +9,28 @@ class Territory;
 class Deck;
 class Order;
 
-// ========================
 // Base abstract strategy
-// ========================
 class PlayerStrategy {
 public:
-    PlayerStrategy();
-    PlayerStrategy(const PlayerStrategy& other);
-    PlayerStrategy& operator=(const PlayerStrategy& other);
+    PlayerStrategy(); //default constructor
+    PlayerStrategy(const PlayerStrategy& other); //copy const
+    PlayerStrategy& operator=(const PlayerStrategy& other); //assignemnt op
+    
+    //all derived strategies should have virtual destructor 
+    //so deleting playerStrategy calls proper derived class
     virtual ~PlayerStrategy();
 
-    // Polymorphic clone for deep copy
+    // clone for deep copy 
+    //concrete strat returns heap-allocated copy of itself
     virtual PlayerStrategy* clone() const = 0;
 
-    // Strategy API
+
+    //list territories to defend/attack
     virtual std::vector<Territory*> toDefend(Player* player) const = 0;
     virtual std::vector<Territory*> toAttack(Player* player) const = 0;
 
-    // Return the created order (or nullptr) – same spirit as your Player::issueOrder
+    // Return the created order (or nullptr)same spirit as Player::issueOrder
+    //kind describes the type (deploy, advance etc)
     virtual Order* issueOrder(
         Player* player,
         const std::string& kind,
@@ -37,12 +41,11 @@ public:
     const std::string& name() const;
 
 protected:
-    std::string* name_;   // pointer (consistent with COMP345 pointer style)
+    std::string* name_;   // getter for strat name
 };
 
-// ========================
 // Human Player Strategy
-// ========================
+//always interacts with user 
 class HumanPlayerStrategy : public PlayerStrategy {
 public:
     HumanPlayerStrategy();
@@ -52,6 +55,7 @@ public:
 
     PlayerStrategy* clone() const override;
 
+    
     std::vector<Territory*> toDefend(Player* player) const override;
     std::vector<Territory*> toAttack(Player* player) const override;
     Order* issueOrder(
@@ -62,11 +66,11 @@ public:
     ) override;
 };
 
-// ========================
 // Aggressive Player Strategy
-// ========================
+//strongest territory focus, attacks aggressively 
 class AggressivePlayerStrategy : public PlayerStrategy {
 public:
+
     AggressivePlayerStrategy();
     AggressivePlayerStrategy(const AggressivePlayerStrategy& other);
     AggressivePlayerStrategy& operator=(const AggressivePlayerStrategy& other);
@@ -74,8 +78,12 @@ public:
 
     PlayerStrategy* clone() const override;
 
+    //attack = neighbours of strongest teritory
+    //defend strongest territories
     std::vector<Territory*> toDefend(Player* player) const override;
     std::vector<Territory*> toAttack(Player* player) const override;
+    
+    //deploy on strongest, advance from stongest to weakest
     Order* issueOrder(
         Player* player,
         const std::string& kind,
@@ -84,9 +92,8 @@ public:
     ) override;
 };
 
-// ========================
 // Benevolent Player Strategy
-// ========================
+//never attacks, only reinforces weakest territories
 class BenevolentPlayerStrategy : public PlayerStrategy {
 public:
     BenevolentPlayerStrategy();
@@ -96,8 +103,13 @@ public:
 
     PlayerStrategy* clone() const override;
 
+    //defend weakest terr
     std::vector<Territory*> toDefend(Player* player) const override;
+    
+    //return empty list
     std::vector<Territory*> toAttack(Player* player) const override;
+    
+    //deploy on weakest, move troops between your terr
     Order* issueOrder(
         Player* player,
         const std::string& kind,
@@ -106,9 +118,8 @@ public:
     ) override;
 };
 
-// ========================
 // Neutral Player Strategy
-// ========================
+//does nothing
 class NeutralPlayerStrategy : public PlayerStrategy {
 public:
     NeutralPlayerStrategy();
@@ -128,9 +139,8 @@ public:
     ) override;
 };
 
-// ========================
 // Cheater Player Strategy
-// ========================
+//automatically conquers adjacent enemy terrs
 class CheaterPlayerStrategy : public PlayerStrategy {
 public:
     CheaterPlayerStrategy();
@@ -140,8 +150,13 @@ public:
 
     PlayerStrategy* clone() const override;
 
+    //defend whatever it has
     std::vector<Territory*> toDefend(Player* player) const override;
+    
+    //attack all adjacent 
     std::vector<Territory*> toAttack(Player* player) const override;
+    
+    //issue order that immediately conquers adjacent terrs
     Order* issueOrder(
         Player* player,
         const std::string& kind,
@@ -150,5 +165,6 @@ public:
     ) override;
 
 private:
+//do the cheating logic
     void performCheat(Player* player);
 };

@@ -5,7 +5,7 @@
 #include <iostream>
 #include <vector>
 
-// Helper to print a list of territories
+// Helper to print a list of territories with names and armies
 static void printTerritoryList(const std::string& label, const std::vector<Territory*>& terrs) {
     std::cout << label << " [";
     for (std::size_t i = 0; i < terrs.size(); ++i) {
@@ -15,13 +15,13 @@ static void printTerritoryList(const std::string& label, const std::vector<Terri
     std::cout << "]\n";
 }
 
-// Free function required by the assignment
+// Free function to test strategies
 void testPlayerStrategies() {
     std::cout << "=== testPlayerStrategies() ===\n\n";
 
-    // -----------------------------------------------------------------
+    
     // 1. Create a tiny "map" with 4 territories and link neighbors
-    // -----------------------------------------------------------------
+    
     Territory* t1 = new Territory(1, "Alpha", 0, 0, std::vector<std::string>{});
     Territory* t2 = new Territory(2, "Beta",  1, 0, std::vector<std::string>{});
     Territory* t3 = new Territory(3, "Gamma", 2, 0, std::vector<std::string>{});
@@ -35,30 +35,29 @@ void testPlayerStrategies() {
     t3->neighbors.push_back(t4);
     t4->neighbors.push_back(t3);
 
-    // -----------------------------------------------------------------
     // 2. Create players and assign strategies
-    // -----------------------------------------------------------------
     Player human("HumanPlayer");
     Player aggro("AggroBot");
     Player bene("BeneBot");
     Player neutral("NeutralBot");
     Player cheater("CheatBot");
 
+    //set the strategies
     human.setStrategy(new HumanPlayerStrategy());
     aggro.setStrategy(new AggressivePlayerStrategy());
     bene.setStrategy(new BenevolentPlayerStrategy());
     neutral.setStrategy(new NeutralPlayerStrategy());
     cheater.setStrategy(new CheaterPlayerStrategy());
 
+    //display each player's strategy
     std::cout << "Human uses: "   << human.strategy()->name()   << "\n";
     std::cout << "Aggro uses: "   << aggro.strategy()->name()   << "\n";
     std::cout << "Bene uses: "    << bene.strategy()->name()    << "\n";
     std::cout << "Neutral uses: " << neutral.strategy()->name() << "\n";
     std::cout << "Cheater uses: " << cheater.strategy()->name() << "\n\n";
 
-    // -----------------------------------------------------------------
     // 3. Assign ownership and armies to territories
-    // -----------------------------------------------------------------
+
     // Human owns Alpha & Beta
     t1->owner = &human;  t1->armies = 5;
     t2->owner = &human;  t2->armies = 2;
@@ -73,12 +72,11 @@ void testPlayerStrategies() {
     t4->owner = &bene;   t4->armies = 1;
     bene.addTerritory(t4);
 
-    // CheaterBot owns nothing initially, but is adjacent (through others)
+    // CheaterBot owns nothing initially, but is adjacent 
     // it will try to cheat-conquer neighbors of any territories it owns
 
-    // -----------------------------------------------------------------
     // 4. Show toDefend / toAttack behavior
-    // -----------------------------------------------------------------
+    
     std::cout << "--- toDefend / toAttack demonstrations ---\n\n";
 
     printTerritoryList("Human toDefend: ", human.toDefend());
@@ -101,9 +99,7 @@ void testPlayerStrategies() {
     printTerritoryList("CheaterBot toAttack (adjacent enemies): ", cheater.toAttack());
     std::cout << "\n";
 
-    // -----------------------------------------------------------------
     // 5. Show issueOrder() behavior for each strategy
-    // -----------------------------------------------------------------
     std::cout << "\n--- issueOrder() demonstrations ---\n\n";
 
     // Give some reinforcements to players for deploy demos
@@ -131,16 +127,39 @@ void testPlayerStrategies() {
               << cheater.territories()->size() << " territories.\n\n";
 
     // Human: would interactively ask user for input.
-    // Uncomment to test manually (when you actually run the program and type):
     //
     // std::cout << "[Human] Now demonstrating interactive issueOrder(\"deploy\")...\n";
     // human.setReinforcementPool(3);
     // human.issueOrder("deploy", nullptr, nullptr);
     //
 
-    // -----------------------------------------------------------------
-    // 6. Dynamic strategy change demo
-    // -----------------------------------------------------------------
+   // 6. cheater demo
+    // Give CheaterBot a territory that is adjacent to enemies so its cheat works.
+    human.removeTerritory(t2);
+    t2->owner = &cheater;
+    cheater.addTerritory(t2);
+
+    std::cout << "[CheatBot] Before cheating:\n";
+    std::cout << "  Cheater owns " << cheater.territories()->size() << " territories.\n";
+    std::cout << "  Owners: Alpha=" << t1->owner->name()
+              << ", Beta=" << t2->owner->name()
+              << ", Gamma=" << t3->owner->name()
+              << ", Delta=" << t4->owner->name() << "\n";
+
+    // Cheater: automatically conquers all adjacent enemy territories
+    cheater.issueOrder("advance", nullptr, nullptr);  // kind is ignored in our impl
+
+    std::cout << "[CheatBot] After cheating:\n";
+    std::cout << "  Cheater now owns " << cheater.territories()->size() << " territories.\n";
+    std::cout << "  Owners: Alpha=" << t1->owner->name()
+              << ", Beta=" << t2->owner->name()
+              << ", Gamma=" << t3->owner->name()
+              << ", Delta=" << t4->owner->name() << "\n\n";
+
+
+    // 7. Dynamic strategy change demo
+    
+
     std::cout << "Changing NeutralBot strategy to Aggressive at runtime...\n";
     neutral.setStrategy(new AggressivePlayerStrategy());
     std::cout << "NeutralBot now uses: " << neutral.strategy()->name() << "\n";
@@ -155,9 +174,10 @@ void testPlayerStrategies() {
     printTerritoryList("NeutralBot (now Aggressive) toDefend: ", neutral.toDefend());
     neutral.issueOrder("deploy", nullptr, nullptr);
 
-    // -----------------------------------------------------------------
-    // 7. Cleanup
-    // -----------------------------------------------------------------
+
+
+    // 8. Cleanup
+    
     delete t1;
     delete t2;
     delete t3;

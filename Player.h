@@ -76,7 +76,7 @@ public:
     // call at start of turn
     void clearDiplomaticRelations(); 
 
-        // Strategy pattern for player strategy
+    // Strategy pattern for player strategy
     PlayerStrategy* strategy() const;
     void setStrategy(PlayerStrategy* s);
 
