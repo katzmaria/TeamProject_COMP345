@@ -885,6 +885,7 @@ void GameEngine::tournamentMode(const std::string& command) {
         numberOfGames = 1;
     }
 
+     // filter the list of strategies so that only valid names remain
     std::vector<std::string> validatedStrategies;
     for (const std::string& code : strategies) {
         const std::string lowered = toLowerCopy(code);
@@ -901,6 +902,7 @@ void GameEngine::tournamentMode(const std::string& command) {
         strategies.pop_back();
     }
 
+    // for validate maps, it removes any entries that do not exist or are not regular .map files
     for (auto it = maps.begin(); it != maps.end();) {
         const std::filesystem::path mapPath = std::filesystem::current_path() / "maps" / *it;
         std::error_code ec;
@@ -931,9 +933,11 @@ void GameEngine::tournamentMode(const std::string& command) {
         results[m + 1][0] = maps[m];
     }
 
+    // random number generator used for shuffling players and territories
     std::mt19937 rng(static_cast<unsigned>(
         std::chrono::high_resolution_clock::now().time_since_epoch().count()));
 
+    // function that runs one single game for tournament mode
     auto runSingleGame = [&](const std::string& mapName, int gameIndex) -> std::string {
         GameEngine game;
         const std::string mapPath = "maps/" + mapName;
@@ -943,6 +947,7 @@ void GameEngine::tournamentMode(const std::string& command) {
 
         game.setState("mapvalidated");
 
+        // create players based on their strategies
         int playerIndex = 1;
         for (const std::string& code : strategies) {
             Player* player = new Player("Player" + std::to_string(playerIndex) + "-" + titleCaseCopy(code));
@@ -981,6 +986,7 @@ void GameEngine::tournamentMode(const std::string& command) {
             player->resetCommitted();
         }
 
+        // distribute territories round-robin with 3 initial armies each
         for (std::size_t i = 0; i < territories.size(); ++i) {
             Territory* territory = territories[i];
             Player* owner = game.players[i % game.players.size()];
@@ -993,6 +999,7 @@ void GameEngine::tournamentMode(const std::string& command) {
             player->setConqueredThisTurn(false);
         }
 
+        // run turns
         for (int turn = 1; turn <= maxTurns && game.players.size() > 1; ++turn) {
             std::cout << "\n[Game " << gameIndex << "] Turn " << turn << "\n";
             game.reinforcementPhase();
@@ -1020,11 +1027,13 @@ void GameEngine::tournamentMode(const std::string& command) {
                 player->issueOrder("advance", game.deck, &game.players);
             }
 
+             // reset for next turn
             for (Player* player : game.players) {
                 player->resetCommitted();
                 player->setConqueredThisTurn(false);
             }
 
+            // eliminate the players who lost all territories
             for (auto it = game.players.begin(); it != game.players.end();) {
                 Player* p = *it;
                 const auto* terrs = p->territories();
@@ -1066,12 +1075,14 @@ void GameEngine::tournamentMode(const std::string& command) {
         return winner;
     };
 
+    // run each map for every game count and store the results in result matrix
     for (std::size_t mapIndex = 0; mapIndex < mapCount; ++mapIndex) {
         for (int gameNumber = 1; gameNumber <= numberOfGames; ++gameNumber) {
             results[mapIndex + 1][gameNumber] = runSingleGame(maps[mapIndex], gameNumber);
         }
     }
 
+    // function to turn a list into a printable string
     auto joinList = [](const std::vector<std::string>& values, bool prettify = false) {
         std::ostringstream oss;
         for (std::size_t i = 0; i < values.size(); ++i) {
@@ -1109,6 +1120,8 @@ void GameEngine::tournamentMode(const std::string& command) {
     const std::string summaryText = summary.str();
     std::cout << summaryText;
 
+
+    // log tournament summary using Observer pattern
     Command logCommand("tournament");
     logObserver observer;
     logCommand.attach(observer);
